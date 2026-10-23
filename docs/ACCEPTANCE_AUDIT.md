@@ -1,0 +1,34 @@
+# Phase 1 acceptance audit
+
+Audit date: 2026-10-17 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+
+| Criterion | Status | Evidence / blocker |
+|---|---|---|
+| Protected authentication and organization RBAC | PASS | Better Auth owner login, server membership lookup, role gates, protected dashboard layout, and browser/API negative tests with stable `UNAUTHENTICATED` JSON responses; paid company detail excludes Viewer accounts |
+| Migrations and durable PostgreSQL persistence | PASS (local) | PostgreSQL 16.15 initialized; migration deployed; CSV record, audit note/status update, and reload durability exercised through the browser |
+| Apollo credential encryption and zero-credit connection test | PASS (contract) | AES-256-GCM helpers; server-only route; adapter test asserts `/auth/health`; no credential echoed |
+| Live roofing-company search in Las Vegas | BLOCKED | No authorized Apollo credential and no authorization for the one-credit search page |
+| Real company detail | BLOCKED (live) | Explicit user-triggered detail preview, role gate, budget check, and usage record are implemented; a real response requires an authorized provider result and may consume one provider credit |
+| Save five actual companies and persist after reload | BLOCKED (Apollo) | PostgreSQL persistence is verified; five actual Apollo companies require authorized live results |
+| Second market without code changes | BLOCKED | Depends on live provider authorization |
+| Repeat search/save without duplicates | PASS (rules/contract), BLOCKED (live) | Unique provider/domain constraints and P2002 conflict handling implemented; live scenario unavailable |
+| Invalid credential state | PASS (contract), BLOCKED (live) | HTTP mapping and UI state implemented/tested; no live invalid-key exercise performed |
+| CSV fallback validation and deduplication | PASS | Row validation, IDN/domain normalization, duplicate reporting, PostgreSQL persistence, and clearly labelled source |
+| CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
+| Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
+| Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
+| Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
+| Desktop/mobile critical flow | PASS (real local runtime) | 10/10 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, and screenshots verified |
+
+## Automated evidence
+
+- `npm test`: 4 files, 17 tests passed.
+- `npm run lint`: passed with no findings.
+- `npm run typecheck`: passed in strict mode.
+- `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
+- `npm run test:e2e`: 10 passed across desktop and mobile, including unauthenticated route/API rejection, security headers, CSV persistence, audited status/note/tag updates, reload durability, and real CRM filtering.
+- `npm audit --omit=dev`: 0 vulnerabilities. Full audit retains five high-severity findings in ESLint's development-only globbing chain; no runtime package is affected, and npm currently proposes an incompatible downgrade of `eslint-config-next` as the automated fix.
+- Source secret-pattern scan: no credential-like value found outside excluded generated/artifact directories.
+- `npm run db:restore-drill`: passed locally with checksum, exact 16-table row-count parity, current migration status, isolated-database cleanup, and an 11.3-second measured duration.
+
+The Phase 1 gate remains **BLOCKED**, not complete, until every live and durability criterion is reproduced with redacted evidence.

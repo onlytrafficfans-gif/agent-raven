@@ -1,0 +1,14 @@
+node_modules
+.next
+.env*
+!.env.example
+test-results
+playwright-report
+coverage
+*.log
+*.tsbuildinfo
+.DS_Store
+src/generated/prisma
+.runtime
+.recovery
+prisma/dev.db

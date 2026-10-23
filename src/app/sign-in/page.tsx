@@ -1,0 +1,4 @@
+import Image from "next/image";
+import { SignInForm } from "@/components/sign-in-form";
+import { ThemeToggle } from "@/components/theme-toggle";
+export default function SignInPage(){return <main className="auth-page"><div className="auth-theme"><ThemeToggle compact/></div><section className="auth-visual"><Image src="/brand/agent-raven-flagship.png" fill loading="eager" sizes="(max-width: 760px) 100vw, 62vw" alt="Agent.Raven flagship raven"/><div className="auth-wordmark">AGENT<span>.</span>RAVEN</div></section><section className="auth-card"><div className="auth-card-mark"><Image src="/brand/agent-raven-flagship.png" width={190} height={126} loading="eager" alt=""/><span>AGENT<span>.</span>RAVEN</span></div><div className="auth-rule"/><h1>Welcome back</h1><p>Sign in to your agency workspace.</p><SignInForm/></section></main>}

@@ -1,0 +1,296 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum MembershipRole {
+  OWNER
+  ADMIN
+  ANALYST
+  VIEWER
+}
+
+enum IntegrationProvider {
+  APOLLO
+}
+
+enum IntegrationState {
+  CONNECTED
+  DISCONNECTED
+  INVALID
+  INSUFFICIENT_PERMISSION
+  RATE_LIMITED
+  BUDGET_BLOCKED
+  PROVIDER_UNAVAILABLE
+}
+
+enum SearchOutcome {
+  SUCCEEDED
+  EMPTY
+  INVALID_CREDENTIAL
+  INSUFFICIENT_PERMISSION
+  RATE_LIMITED
+  BUDGET_BLOCKED
+  PROVIDER_UNAVAILABLE
+  VALIDATION_ERROR
+  INVALID_REQUEST
+}
+
+enum ProspectStatus {
+  NEW
+  REVIEWING
+  QUALIFIED
+  REJECTED
+}
+
+enum ProspectSource {
+  APOLLO
+  CSV_IMPORT
+}
+
+enum ProviderAvailability {
+  AVAILABLE
+  PARTIAL
+  UNAVAILABLE
+}
+
+model User {
+  id            String         @id @default(uuid()) @db.Uuid
+  name          String
+  email         String         @unique
+  emailVerified Boolean        @default(false)
+  image         String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  sessions      Session[]
+  accounts      Account[]
+  memberships   Membership[]
+  searches      SearchRun[]
+  notes         ProspectNote[]
+  auditEvents   AuditLog[]     @relation("AuditActor")
+}
+
+model Session {
+  id        String   @id @default(uuid()) @db.Uuid
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String   @db.Uuid
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model Account {
+  id                    String    @id @default(uuid()) @db.Uuid
+  accountId             String
+  providerId            String
+  userId                String    @db.Uuid
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  accessTokenExpiresAt  DateTime?
+  refreshTokenExpiresAt DateTime?
+  scope                 String?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([providerId, accountId])
+  @@index([userId])
+}
+
+model Verification {
+  id         String   @id @default(uuid()) @db.Uuid
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@index([identifier])
+}
+
+model Organization {
+  id            String                  @id @default(uuid()) @db.Uuid
+  name          String
+  slug          String                  @unique
+  createdAt     DateTime                @default(now())
+  updatedAt     DateTime                @updatedAt
+  memberships   Membership[]
+  integrations  IntegrationConnection[]
+  searchQueries SearchQuery[]
+  searchRuns    SearchRun[]
+  prospects     ProspectCompany[]
+  usage         IntegrationUsage[]
+  audits        AuditLog[]
+}
+
+model Membership {
+  id             String         @id @default(uuid()) @db.Uuid
+  organizationId String         @db.Uuid
+  userId         String         @db.Uuid
+  role           MembershipRole @default(ANALYST)
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+  organization   Organization   @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+}
+
+model IntegrationConnection {
+  id                  String              @id @default(uuid()) @db.Uuid
+  organizationId      String              @db.Uuid
+  provider            IntegrationProvider
+  state               IntegrationState    @default(DISCONNECTED)
+  encryptedCredential String?
+  credentialKeyId     String?
+  lastTestedAt        DateTime?
+  sanitizedDiagnostic String?
+  createdAt           DateTime            @default(now())
+  updatedAt           DateTime            @updatedAt
+  organization        Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@unique([organizationId, provider])
+}
+
+model SearchQuery {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @db.Uuid
+  provider       IntegrationProvider
+  filters        Json
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  runs           SearchRun[]
+
+  @@index([organizationId, createdAt])
+}
+
+model SearchRun {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @db.Uuid
+  searchQueryId  String              @db.Uuid
+  runByUserId    String              @db.Uuid
+  provider       IntegrationProvider
+  page           Int                 @default(1)
+  perPage        Int                 @default(25)
+  providerCursor String?
+  outcome        SearchOutcome
+  resultCount    Int                 @default(0)
+  errorCategory  String?
+  usageUnits     Int?
+  correlationId  String
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  query          SearchQuery         @relation(fields: [searchQueryId], references: [id], onDelete: Cascade)
+  runBy          User                @relation(fields: [runByUserId], references: [id])
+
+  @@index([organizationId, createdAt])
+}
+
+model ProspectCompany {
+  id                     String               @id @default(uuid()) @db.Uuid
+  organizationId         String               @db.Uuid
+  source                 ProspectSource
+  providerName           String
+  providerOrganizationId String?
+  normalizedDomain       String?
+  name                   String
+  websiteUrl             String?
+  industry               String?
+  location               String?
+  employeeCount          Int?
+  estimatedRevenue       BigInt?
+  retrievedAt            DateTime
+  provenance             Json
+  availability           ProviderAvailability @default(AVAILABLE)
+  status                 ProspectStatus       @default(NEW)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  organization           Organization         @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  notes                  ProspectNote[]
+  tags                   ProspectTag[]
+  audits                 AuditLog[]
+
+  @@unique([organizationId, providerName, providerOrganizationId])
+  @@unique([organizationId, normalizedDomain])
+  @@index([organizationId, status, updatedAt])
+  @@index([organizationId, industry])
+  @@index([organizationId, location])
+}
+
+model ProspectNote {
+  id         String          @id @default(uuid()) @db.Uuid
+  prospectId String          @db.Uuid
+  authorId   String          @db.Uuid
+  body       String
+  createdAt  DateTime        @default(now())
+  updatedAt  DateTime        @updatedAt
+  prospect   ProspectCompany @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  author     User            @relation(fields: [authorId], references: [id])
+
+  @@index([prospectId, createdAt])
+}
+
+model Tag {
+  id             String        @id @default(uuid()) @db.Uuid
+  organizationId String        @db.Uuid
+  name           String
+  createdAt      DateTime      @default(now())
+  prospects      ProspectTag[]
+
+  @@unique([organizationId, name])
+}
+
+model ProspectTag {
+  prospectId String          @db.Uuid
+  tagId      String          @db.Uuid
+  prospect   ProspectCompany @relation(fields: [prospectId], references: [id], onDelete: Cascade)
+  tag        Tag             @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([prospectId, tagId])
+}
+
+model IntegrationUsage {
+  id             String              @id @default(uuid()) @db.Uuid
+  organizationId String              @db.Uuid
+  provider       IntegrationProvider
+  operation      String
+  outcome        String
+  usageUnits     Int                 @default(0)
+  costMicros     BigInt?
+  correlationId  String
+  createdAt      DateTime            @default(now())
+  organization   Organization        @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  @@index([organizationId, provider, createdAt])
+}
+
+model AuditLog {
+  id             String           @id @default(uuid()) @db.Uuid
+  organizationId String           @db.Uuid
+  actorUserId    String?          @db.Uuid
+  prospectId     String?          @db.Uuid
+  action         String
+  targetType     String
+  targetId       String?
+  metadata       Json?
+  correlationId  String
+  createdAt      DateTime         @default(now())
+  organization   Organization     @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  actor          User?            @relation("AuditActor", fields: [actorUserId], references: [id], onDelete: SetNull)
+  prospect       ProspectCompany? @relation(fields: [prospectId], references: [id], onDelete: SetNull)
+
+  @@index([organizationId, createdAt])
+  @@index([prospectId, createdAt])
+}
