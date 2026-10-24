@@ -1,4 +1,44 @@
 "use client";
 import { useState } from "react";
 import { PlugZap, ShieldCheck } from "lucide-react";
-export function ApolloConnection({initialState}:{initialState:string}){const[state,setState]=useState(initialState),[message,setMessage]=useState("");const[busy,setBusy]=useState(false);async function connect(e:React.FormEvent<HTMLFormElement>){e.preventDefault();setBusy(true);setMessage("");const apiKey=String(new FormData(e.currentTarget).get("apiKey"));const r=await fetch("/api/integrations/apollo",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({apiKey})});const data=await r.json();setBusy(false);if(r.ok){setState(data.state);setMessage("Credential tested and stored securely.");e.currentTarget.reset()}else setMessage(data.error?.message??"Connection failed.")}async function disconnect(){await fetch("/api/integrations/apollo",{method:"DELETE"});setState("DISCONNECTED");setMessage("Apollo disconnected.")}return <section className="panel"><div className="panel-head"><div><h2><PlugZap size={18} style={{verticalAlign:"middle",marginRight:8}}/>Apollo</h2><p>Organization search and company detail provider.</p></div><span className={`badge ${state==="CONNECTED"?"green":"amber"}`}>{state.replaceAll("_"," ")}</span></div><div style={{padding:20,maxWidth:680}}><div className="alert info" style={{marginBottom:18}}><ShieldCheck size={18}/>The API key is encrypted at rest, used only on the server, and never returned after submission.</div>{state==="CONNECTED"?<button className="btn" onClick={disconnect}>Disconnect Apollo</button>:<form className="stack" onSubmit={connect}><div className="field"><label htmlFor="apiKey">Apollo API key</label><input className="input" id="apiKey" name="apiKey" type="password" autoComplete="off" required minLength={12} placeholder="Stored once; never displayed again"/></div><button className="btn primary" disabled={busy}>{busy?"Testing connection…":"Test and connect"}</button></form>}{message&&<div className={state==="CONNECTED"?"alert success":"alert"} style={{marginTop:14}} role="status">{message}</div>}</div></section>}
+export function ApolloConnection({initialState}:{initialState:string}){
+  const[state,setState]=useState(initialState),[message,setMessage]=useState("");
+  const[busy,setBusy]=useState(false);
+
+  async function connect(e:React.FormEvent<HTMLFormElement>){
+    e.preventDefault();
+    setBusy(true);
+    setMessage("");
+    const form=e.currentTarget;
+    const apiKey=String(new FormData(form).get("apiKey"));
+    try{
+      const response=await fetch("/api/integrations/apollo",{method:"POST",headers:{"content-type":"application/json"},body:JSON.stringify({apiKey})});
+      const data=await response.json().catch(()=>null);
+      if(!response.ok){setMessage(data?.error?.message??"Apollo connection failed. Try again.");return}
+      setState(data.state);
+      setMessage("Credential tested and stored securely.");
+      form.reset();
+    }catch{
+      setMessage("Agent.Raven could not reach the server. Check the connection and try again.");
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  async function disconnect(){
+    setBusy(true);
+    setMessage("");
+    try{
+      const response=await fetch("/api/integrations/apollo",{method:"DELETE"});
+      if(!response.ok){setMessage("Apollo could not be disconnected. Try again.");return}
+      setState("DISCONNECTED");
+      setMessage("Apollo disconnected.");
+    }catch{
+      setMessage("Agent.Raven could not reach the server. Check the connection and try again.");
+    }finally{
+      setBusy(false);
+    }
+  }
+
+  return <section className="panel"><div className="panel-head"><div><h2><PlugZap size={18} style={{verticalAlign:"middle",marginRight:8}}/>Apollo</h2><p>Organization search and company detail provider.</p></div><span className={`badge ${state==="CONNECTED"?"green":"amber"}`}>{state.replaceAll("_"," ")}</span></div><div style={{padding:20,maxWidth:680}}><div className="alert info" style={{marginBottom:18}}><ShieldCheck size={18}/>The API key is encrypted at rest, used only on the server, and never returned after submission.</div>{state==="CONNECTED"?<button className="btn" type="button" disabled={busy} onClick={disconnect}>{busy?"Disconnecting…":"Disconnect Apollo"}</button>:<form className="stack" onSubmit={connect}><div className="field"><label htmlFor="apiKey">Apollo API key</label><input className="input" id="apiKey" name="apiKey" type="password" autoComplete="off" required minLength={12} placeholder="Stored once; never displayed again"/></div><button className="btn primary" type="submit" disabled={busy}>{busy?"Testing connection…":"Test and connect"}</button></form>}{message&&<div className={state==="CONNECTED"?"alert success":"alert"} style={{marginTop:14}} role="status">{message}</div>}</div></section>
+}

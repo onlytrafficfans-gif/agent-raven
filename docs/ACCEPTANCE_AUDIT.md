@@ -1,10 +1,11 @@
 # Phase 1 acceptance audit
 
-Audit date: 2026-10-17 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-10-24 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
 | Protected authentication and organization RBAC | PASS | Better Auth owner login, server membership lookup, role gates, protected dashboard layout, and browser/API negative tests with stable `UNAUTHENTICATED` JSON responses; paid company detail excludes Viewer accounts |
+| Self-service account recovery and session choice | PASS (local), BLOCKED (email delivery) | Real signup creates a PostgreSQL user, credential account, isolated organization, Owner membership, and disconnected Apollo connection; reset-token consumption changes the password and revokes sessions; checked/unchecked Remember me produces persistent/session cookies. Live email delivery awaits configured Resend credentials and a verified sender. |
 | Migrations and durable PostgreSQL persistence | PASS (local) | PostgreSQL 16.15 initialized; migration deployed; CSV record, audit note/status update, and reload durability exercised through the browser |
 | Apollo credential encryption and zero-credit connection test | PASS (contract) | AES-256-GCM helpers; server-only route; adapter test asserts `/auth/health`; no credential echoed |
 | Live roofing-company search in Las Vegas | BLOCKED | No authorized Apollo credential and no authorization for the one-credit search page |
@@ -18,7 +19,7 @@ Audit date: 2026-10-17 (America/Los_Angeles). Environment: local Codex workspace
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
-| Desktop/mobile critical flow | PASS (real local runtime) | 10/10 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, and screenshots verified |
+| Desktop/mobile critical flow | PASS (real local runtime) | 18/18 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 
 ## Automated evidence
 
@@ -26,7 +27,7 @@ Audit date: 2026-10-17 (America/Los_Angeles). Environment: local Codex workspace
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
-- `npm run test:e2e`: 10 passed across desktop and mobile, including unauthenticated route/API rejection, security headers, CSV persistence, audited status/note/tag updates, reload durability, and real CRM filtering.
+- `npm run test:e2e`: 18 passed across desktop and mobile, including real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
 - `npm audit --omit=dev`: 0 vulnerabilities. Full audit retains five high-severity findings in ESLint's development-only globbing chain; no runtime package is affected, and npm currently proposes an incompatible downgrade of `eslint-config-next` as the automated fix.
 - Source secret-pattern scan: no credential-like value found outside excluded generated/artifact directories.
 - `npm run db:restore-drill`: passed locally with checksum, exact 16-table row-count parity, current migration status, isolated-database cleanup, and an 11.3-second measured duration.

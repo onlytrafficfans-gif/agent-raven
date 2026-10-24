@@ -11,9 +11,10 @@ Requirements: Node.js 22+, npm 12+, and PostgreSQL 15+.
 3. Run `npm install --legacy-peer-deps` (the flag resolves an optional Better Auth/Svelte peer range; Next.js does not use that adapter).
 4. Run `npm run db:generate && npm run db:deploy`.
 5. Set strong `SEED_OWNER_EMAIL` and `SEED_OWNER_PASSWORD` values, then run `npm run db:seed`.
-6. Run `npm run dev` and sign in at `http://127.0.0.1:3000/sign-in`.
+6. For password-reset delivery, configure `RESEND_API_KEY` and a verified `AUTH_EMAIL_FROM` sender. Without both values, the recovery screen reports that delivery is not configured and does not pretend an email was sent.
+7. Run `npm run dev` and sign in at `http://127.0.0.1:3000/sign-in`, or create a self-service account at `/sign-up`.
 
-The browser suite uses the real authentication, PostgreSQL, CSV import, audit, update, and reload paths. Temporary prospects, sessions, audit rows, and orphan tags are marked and removed automatically in global teardown. Provider adapter responses remain mocked only inside unit tests; the running application has no fixture mode.
+The browser suite uses real authentication, account registration, workspace provisioning, password-reset tokens, session revocation, PostgreSQL, CSV import, audit, update, and reload paths. Temporary users, workspaces, prospects, sessions, audit rows, and orphan tags are marked and removed automatically. Provider adapter responses remain mocked only inside unit tests; the running application has no fixture mode.
 
 ## Verification
 

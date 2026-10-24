@@ -137,7 +137,7 @@ model Organization {
 model Membership {
   id             String         @id @default(uuid()) @db.Uuid
   organizationId String         @db.Uuid
-  userId         String         @db.Uuid
+  userId         String         @unique @db.Uuid
   role           MembershipRole @default(ANALYST)
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
@@ -145,7 +145,6 @@ model Membership {
   user           User           @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([organizationId, userId])
-  @@index([userId])
 }
 
 model IntegrationConnection {

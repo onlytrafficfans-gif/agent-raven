@@ -3,6 +3,7 @@
 ## Secrets and rotation
 
 - `BETTER_AUTH_SECRET`: rotate through a controlled session invalidation window; expect existing sessions to expire.
+- `RESEND_API_KEY` and `AUTH_EMAIL_FROM`: provide transactional password-reset delivery. Verify the sender domain in Resend, keep the API key server-only, and rotate it in the provider before replacing the deployment secret. When either value is absent, the recovery UI fails visibly instead of claiming delivery.
 - `INTEGRATION_ENCRYPTION_KEY`: 32 random bytes encoded as base64. Credentials are AES-256-GCM envelopes tagged `v1`. To rotate, deploy code that can read the old and new key IDs, re-encrypt rows transactionally, verify connection health, then retire the old key. The current Phase 1 UI disconnect/reconnect flow is the safest manual rotation path.
 - Apollo credentials are returned by neither list nor mutation interfaces. Logs redact key/token/secret/password/credential fields.
 
@@ -18,6 +19,7 @@ Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The 
 
 ## Incidents
 
+- Password email failure: verify the Resend sender domain, API key, provider activity, and deployment variables. Reset tokens expire after one hour and all existing sessions are revoked after a successful reset.
 - Invalid key: mark connection invalid, rotate in Apollo, reconnect, and inspect the credential audit event.
 - Permission failure: add only the required Apollo scopes; do not broaden to a master key without review.
 - Rate limit: honor `Retry-After`; the app does not retry paid calls automatically.

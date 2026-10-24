@@ -1,14 +1,33 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { db } from "@/lib/db";
+import { isPasswordResetEmailConfigured, sendPasswordResetEmail } from "@/lib/email";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
+import { after } from "next/server";
 
 export const auth = betterAuth({
   appName: "Agent.Raven",
   database: prismaAdapter(db, { provider: "postgresql" }),
-  emailAndPassword: { enabled: true, disableSignUp: true },
-  session: { expiresIn: 60 * 60 * 8, updateAge: 60 * 30 },
+  emailAndPassword: {
+    enabled: true,
+    disableSignUp: false,
+    minPasswordLength: 12,
+    maxPasswordLength: 128,
+    resetPasswordTokenExpiresIn: 60 * 60,
+    revokeSessionsOnPasswordReset: true,
+    sendResetPassword: async ({ user, url }) => {
+      if (!isPasswordResetEmailConfigured()) return;
+      after(async () => {
+        try {
+          await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl: url });
+        } catch {
+          console.error("Password reset email delivery failed.");
+        }
+      });
+    },
+  },
+  session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
   rateLimit: { enabled: process.env.E2E !== "true" },
   advanced: { database: { generateId: "uuid", transaction: true } },
   trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
