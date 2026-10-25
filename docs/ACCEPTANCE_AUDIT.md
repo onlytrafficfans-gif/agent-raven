@@ -18,7 +18,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-25 (America/Los
 | CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
-| Continuous verification | PASS (configured) | GitHub Actions provisions isolated PostgreSQL 16 and runs migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite on pull requests and pushes to `main`; remote execution must pass after publication |
+| Continuous verification | PASS | GitHub Actions run 1 passed against public commit `5ab7839`, provisioning isolated PostgreSQL 16 and running migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite; the same workflow runs on pull requests and pushes to `main` |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
 | Desktop/mobile critical flow | PASS (real local runtime) | 18/18 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 
@@ -34,3 +34,4 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-25 (America/Los
 - `npm run db:restore-drill`: passed locally with checksum, exact 16-table row-count parity, current migration status, isolated-database cleanup, and an 11.3-second measured duration.
 
 The Phase 1 gate remains **BLOCKED**, not complete, until every live and durability criterion is reproduced with redacted evidence.
+
