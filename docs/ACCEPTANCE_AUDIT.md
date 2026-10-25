@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-10-24 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-10-25 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -18,6 +18,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-24 (America/Los
 | CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
+| Continuous verification | PASS (configured) | GitHub Actions provisions isolated PostgreSQL 16 and runs migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite on pull requests and pushes to `main`; remote execution must pass after publication |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
 | Desktop/mobile critical flow | PASS (real local runtime) | 18/18 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 

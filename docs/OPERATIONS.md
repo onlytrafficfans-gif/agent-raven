@@ -34,3 +34,7 @@ All routes receive a same-origin Content Security Policy, clickjacking denial th
 ## Costs and limits
 
 Apollo currently documents organization search as one credit per page (up to 100 results), while organization detail/enrichment can consume one credit per organization. The app enforces its own monthly operation limit before search calls; Apollo's plan, credit balance, scopes, and per-endpoint rate limits remain the external source of truth. PostgreSQL and Vercel costs depend on the selected plans and traffic.
+
+## Continuous verification
+
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It provisions an isolated PostgreSQL 16 service, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, and the complete desktop/mobile browser suite. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
