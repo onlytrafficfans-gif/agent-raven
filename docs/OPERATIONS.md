@@ -37,4 +37,8 @@ Apollo currently documents organization search as one credit per page (up to 100
 
 ## Continuous verification
 
-`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It provisions an isolated PostgreSQL 16 service, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, and the complete desktop/mobile browser suite. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It provisions an isolated PostgreSQL 16 service, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, validates the production environment contract, and runs the complete desktop/mobile browser suite. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
+
+## Deployment preflight
+
+Run `npm run deploy:check` in the production environment before migrations or deployment. The command fails closed when PostgreSQL, the canonical HTTPS auth origin, the auth secret, the 32-byte credential-encryption key, password-email delivery, or the Apollo operation budget is absent or malformed. Its JSON output contains only boolean state and actionable error names, never secret values. Passing preflight proves configuration shape only; it does not prove database reachability, sender-domain verification, Apollo authorization, or live provider behavior. Verify those separately through the health endpoint and acceptance runbook.

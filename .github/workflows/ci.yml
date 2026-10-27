@@ -76,6 +76,17 @@ jobs:
       - name: Production build
         run: npm run build
 
+      - name: Validate production environment contract
+        env:
+          DATABASE_URL: postgresql://postgres:postgres@127.0.0.1:5432/agent_raven?schema=public
+          BETTER_AUTH_URL: https://agent-raven.ci.invalid
+          BETTER_AUTH_SECRET: ci-only-better-auth-secret-at-least-32-characters
+          INTEGRATION_ENCRYPTION_KEY: Y2ktb25seS1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+          RESEND_API_KEY: re_ci_contract_value
+          AUTH_EMAIL_FROM: Agent.Raven <auth@ci.invalid>
+          APOLLO_MONTHLY_OPERATION_LIMIT: "100"
+        run: npm run deploy:check
+
       - name: Desktop and mobile browser tests
         run: npm run test:e2e
 

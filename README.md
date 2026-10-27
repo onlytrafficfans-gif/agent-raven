@@ -25,6 +25,7 @@ npm test
 npm run build
 npm run test:e2e
 npm run db:restore-drill
+npm run deploy:check
 ```
 
 The recovery drill creates a private PostgreSQL dump, restores it into a randomly named isolated database, verifies critical table counts and migrations, and removes the isolated database. Recovery artifacts remain local under the ignored `.recovery/` directory.
@@ -33,4 +34,4 @@ See [API contracts](docs/API.md), [operations](docs/OPERATIONS.md), and the [acc
 
 ## Deployment
 
-The application is Vercel-compatible. Provision managed PostgreSQL, set the documented environment variables, run `npm run db:deploy` in the release pipeline, seed the first owner through a trusted administrative environment, and deploy.
+The application is Vercel-compatible. Provision managed PostgreSQL, set the documented environment variables, run `npm run deploy:check` before release, run `npm run db:deploy` in the release pipeline, seed the first owner through a trusted administrative environment, and deploy. The deployment check validates configuration without printing secret values; it does not verify external account ownership or provider acceptance.

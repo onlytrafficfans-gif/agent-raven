@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-10-25 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-10-27 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -19,12 +19,13 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-25 (America/Los
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
 | Continuous verification | PASS | GitHub Actions run 1 passed against public commit `5ab7839`, provisioning isolated PostgreSQL 16 and running migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite; the same workflow runs on pull requests and pushes to `main` |
+| Production environment preflight | PASS (contract), BLOCKED (live deployment) | `npm run deploy:check` validates PostgreSQL URL shape, canonical HTTPS auth origin, auth-secret strength, the 32-byte encryption key, password-email configuration, and the Apollo operation budget without printing values. The current local environment correctly fails on its local HTTP origin and absent Resend key; hosting, managed PostgreSQL, and verified sender choices remain owner blockers. |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
 | Desktop/mobile critical flow | PASS (real local runtime) | 18/18 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 
 ## Automated evidence
 
-- `npm test`: 4 files, 17 tests passed.
+- `npm test`: 5 files, 20 tests passed.
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
