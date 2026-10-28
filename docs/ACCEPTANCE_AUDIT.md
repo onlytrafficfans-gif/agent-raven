@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-10-27 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-10-28 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -18,6 +18,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-27 (America/Los
 | CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
+| Request correlation and log safety | PASS | Every app-owned JSON route emits the same bounded ID in the response body and `x-request-id` header; unsafe, secret-bearing, and oversized inbound IDs are replaced with UUIDs. Unit tests cover normalization and sanitized errors, while desktop/mobile browser tests verify unauthenticated API correlation. |
 | Continuous verification | PASS | GitHub Actions run 1 passed against public commit `5ab7839`, provisioning isolated PostgreSQL 16 and running migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite; the same workflow runs on pull requests and pushes to `main` |
 | Production environment preflight | PASS (contract), BLOCKED (live deployment) | `npm run deploy:check` validates PostgreSQL URL shape, canonical HTTPS auth origin, auth-secret strength, the 32-byte encryption key, password-email configuration, and the Apollo operation budget without printing values. The current local environment correctly fails on its local HTTP origin and absent Resend key; hosting, managed PostgreSQL, and verified sender choices remain owner blockers. |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
@@ -25,7 +26,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-27 (America/Los
 
 ## Automated evidence
 
-- `npm test`: 5 files, 20 tests passed.
+- `npm test`: 6 files, 24 tests passed.
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.

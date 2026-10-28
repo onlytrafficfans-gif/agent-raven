@@ -1,6 +1,6 @@
 # Phase 1 server interfaces
 
-All application interfaces return JSON unless noted. Error responses use `{ error: { code, message, fields?, retryAfter? }, correlationId? }`. Except for `/api/health` and Better Auth session endpoints, routes require an authenticated session and a current organization membership. The organization is resolved server-side; clients cannot submit an organization ID.
+All application interfaces return JSON unless noted. App-owned JSON responses include the same bounded correlation ID in the `x-request-id` header and response body; unsafe or secret-bearing inbound IDs are replaced. Error responses use `{ error: { code, message, fields?, retryAfter? }, correlationId }`. Except for `/api/health` and Better Auth session endpoints, routes require an authenticated session and a current organization membership. The organization is resolved server-side; clients cannot submit an organization ID.
 
 | Method / path | Authorization | Input | Output | Error categories | Idempotency |
 |---|---|---|---|---|---|

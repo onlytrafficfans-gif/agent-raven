@@ -2,7 +2,7 @@ import { requireContext } from "@/lib/authorization";
 import { ApolloClient } from "@/lib/apollo";
 import { decideBudget } from "@/lib/budget";
 import { db } from "@/lib/db";
-import { jsonError } from "@/lib/http";
+import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { ProviderError } from "@/lib/provider-errors";
 import { decryptCredential } from "@/lib/security";
@@ -16,7 +16,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
       where: { organizationId_provider: { organizationId: ctx.organizationId, provider: "APOLLO" } },
     });
     if (!connection?.encryptedCredential || connection.state !== "CONNECTED") {
-      return Response.json({ error: { code: "DISCONNECTED", message: "Apollo is not connected." }, correlationId: requestId }, { status: 409 });
+      return correlatedJson({ error: { code: "DISCONNECTED", message: "Apollo is not connected." } }, requestId, { status: 409 });
     }
 
     const monthStart = new Date();
@@ -33,7 +33,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
     await db.integrationUsage.create({
       data: { organizationId: ctx.organizationId, provider: "APOLLO", operation: "ORGANIZATION_DETAIL", outcome: "SUCCEEDED", usageUnits: 1, correlationId: requestId },
     });
-    return Response.json({ company, correlationId: requestId });
+    return correlatedJson({ company }, requestId);
   } catch (error) {
     return jsonError(error, requestId);
   }

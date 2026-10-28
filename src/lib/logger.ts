@@ -6,5 +6,6 @@ export function logEvent(level: "info" | "warn" | "error", event: string, fields
 }
 
 export function correlationId(request: Request): string {
-  return request.headers.get("x-request-id")?.slice(0, 128) || crypto.randomUUID();
+  const supplied = request.headers.get("x-request-id")?.trim();
+  return supplied && /^[A-Za-z0-9][A-Za-z0-9._:-]{0,63}$/.test(supplied) ? supplied : crypto.randomUUID();
 }

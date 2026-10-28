@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { requireContext } from "@/lib/authorization";
 import { db } from "@/lib/db";
 import { normalizeDomain } from "@/lib/domain";
-import { jsonError } from "@/lib/http";
+import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { saveProspectSchema } from "@/lib/schemas";
 import { serializeProspect } from "@/lib/serialization";
@@ -22,9 +22,9 @@ export async function POST(request: Request) {
     const matches = await db.prospectCompany.findMany({ where: { organizationId: ctx.organizationId, OR: identity } });
     if (matches.length) {
       if (new Set(matches.map((item) => item.id)).size > 1) {
-        return Response.json({ error: { code: "IDENTITY_CONFLICT", message: "Provider identity and normalized domain point to different records; manual review is required." }, correlationId: requestId }, { status: 409 });
+        return correlatedJson({ error: { code: "IDENTITY_CONFLICT", message: "Provider identity and normalized domain point to different records; manual review is required." } }, requestId, { status: 409 });
       }
-      return Response.json({ prospect: serializeProspect(matches[0]), created: false, correlationId: requestId });
+      return correlatedJson({ prospect: serializeProspect(matches[0]), created: false }, requestId);
     }
     try {
       const prospect = await db.$transaction(async (tx) => {
@@ -50,11 +50,11 @@ export async function POST(request: Request) {
         });
         return created;
       });
-      return Response.json({ prospect: serializeProspect(prospect), created: true, correlationId: requestId }, { status: 201 });
+      return correlatedJson({ prospect: serializeProspect(prospect), created: true }, requestId, { status: 201 });
     } catch (error) {
       if (error instanceof Prisma.PrismaClientKnownRequestError && error.code === "P2002") {
         const existing = await db.prospectCompany.findFirst({ where: { organizationId: ctx.organizationId, OR: identity } });
-        if (existing) return Response.json({ prospect: serializeProspect(existing), created: false, correlationId: requestId });
+        if (existing) return correlatedJson({ prospect: serializeProspect(existing), created: false }, requestId);
       }
       throw error;
     }
@@ -64,6 +64,7 @@ export async function POST(request: Request) {
 }
 
 export async function GET(request: Request) {
+  const requestId = correlationId(request);
   try {
     const ctx = await requireContext();
     const url = new URL(request.url);
@@ -79,8 +80,8 @@ export async function GET(request: Request) {
       orderBy: { updatedAt: "desc" },
       take: 50,
     });
-    return Response.json({ prospects: prospects.map(serializeProspect) });
+    return correlatedJson({ prospects: prospects.map(serializeProspect) }, requestId);
   } catch (error) {
-    return jsonError(error);
+    return jsonError(error, requestId);
   }
 }

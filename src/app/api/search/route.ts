@@ -2,7 +2,7 @@ import { AuthorizationError, requireContext } from "@/lib/authorization";
 import { ApolloClient } from "@/lib/apollo";
 import { decideBudget } from "@/lib/budget";
 import { db } from "@/lib/db";
-import { jsonError } from "@/lib/http";
+import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
 import { ProviderError } from "@/lib/provider-errors";
 import { companySearchSchema } from "@/lib/schemas";
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
           },
         }),
       ]);
-      return Response.json({ ...result, correlationId: requestId });
+      return correlatedJson({ ...result }, requestId);
     } catch (error) {
       if (error instanceof ProviderError) {
         await db.searchRun.create({

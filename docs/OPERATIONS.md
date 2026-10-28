@@ -27,6 +27,8 @@ Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The 
 - Provider outage: keep CSV fallback available; do not represent fixture or CSV records as live Apollo data.
 - Suspected leakage: revoke the Apollo key, rotate application secrets, inspect structured logs/artifacts, and notify affected operators.
 
+Every app-owned JSON API response returns a bounded correlation ID in both the response body and `x-request-id` header. Preserve that ID in support and incident records to join browser failures, structured logs, provider usage, and audit entries. User-supplied IDs containing spaces, email-like characters, control characters, or more than 64 characters are discarded and replaced with a UUID so untrusted values cannot become log or audit identifiers.
+
 ## Browser security policy
 
 All routes receive a same-origin Content Security Policy, clickjacking denial through CSP and `X-Frame-Options`, MIME sniffing protection, a restricted referrer policy, disabled camera/microphone/geolocation/browser-topic permissions, and same-origin opener/resource isolation. The production browser suite verifies these headers. HSTS is intentionally deferred until the final HTTPS hostname and subdomain policy are verified; enable it at the deployment edge only after that decision.

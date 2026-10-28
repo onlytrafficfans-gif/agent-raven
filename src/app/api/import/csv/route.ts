@@ -2,7 +2,7 @@ import { Prisma } from "@prisma/client";
 import { requireContext } from "@/lib/authorization";
 import { parseProspectCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
-import { jsonError } from "@/lib/http";
+import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 
 export async function POST(request: Request) {
@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File) || file.size > 2_000_000) {
-      return Response.json({ error: { code: "INVALID_FILE", message: "Upload a CSV file no larger than 2 MB." }, correlationId: requestId }, { status: 400 });
+      return correlatedJson({ error: { code: "INVALID_FILE", message: "Upload a CSV file no larger than 2 MB." } }, requestId, { status: 400 });
     }
     const result = parseProspectCsv(await file.text());
     let created = 0;
@@ -55,7 +55,7 @@ export async function POST(request: Request) {
         else result.errors.push({ row: row.row, message: "Row could not be persisted." });
       }
     }
-    return Response.json({ summary: { valid: result.valid.length, created, duplicates, errors: result.errors.length }, errors: result.errors, correlationId: requestId });
+    return correlatedJson({ summary: { valid: result.valid.length, created, duplicates, errors: result.errors.length }, errors: result.errors }, requestId);
   } catch (error) {
     return jsonError(error, requestId);
   }

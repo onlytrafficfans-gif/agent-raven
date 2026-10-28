@@ -2,7 +2,9 @@ import { expect, type APIResponse, test } from "@playwright/test";
 
 async function expectUnauthenticated(response: APIResponse) {
   expect(response.status()).toBe(401);
-  await expect(response.json()).resolves.toMatchObject({
+  const body = await response.json();
+  expect(response.headers()["x-request-id"]).toBe(body.correlationId);
+  expect(body).toMatchObject({
     error: {
       code: "UNAUTHENTICATED",
       message: "Authentication is required.",

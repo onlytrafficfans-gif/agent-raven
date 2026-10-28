@@ -1,23 +1,22 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
+import { correlatedJson } from "@/lib/http";
+import { correlationId, logEvent } from "@/lib/logger";
 
 const bodySchema = z.object({ workspaceName: z.string().trim().min(2).max(80).optional() }).strict();
 
-function apiError(code: string, message: string, status: number) {
-  return Response.json({ error: { code, message } }, { status });
-}
-
 export async function POST(request: Request) {
+  const requestId = correlationId(request);
   const session = await auth.api.getSession({ headers: request.headers });
-  if (!session) return apiError("UNAUTHORIZED", "Sign in is required.", 401);
+  if (!session) return correlatedJson({ error: { code: "UNAUTHORIZED", message: "Sign in is required." } }, requestId, { status: 401 });
 
   const raw = await request.json().catch(() => ({}));
   const parsed = bodySchema.safeParse(raw);
-  if (!parsed.success) return apiError("VALIDATION_ERROR", "Workspace name must be between 2 and 80 characters.", 400);
+  if (!parsed.success) return correlatedJson({ error: { code: "VALIDATION_ERROR", message: "Workspace name must be between 2 and 80 characters." } }, requestId, { status: 400 });
 
   const existing = await db.membership.findUnique({ where: { userId: session.user.id } });
-  if (existing) return Response.json({ data: { membershipId: existing.id, created: false } });
+  if (existing) return correlatedJson({ data: { membershipId: existing.id, created: false } }, requestId);
 
   const workspaceName = parsed.data.workspaceName ?? `${session.user.name.trim() || "Agent.Raven"}'s Workspace`;
   try {
@@ -32,11 +31,11 @@ export async function POST(request: Request) {
       await tx.integrationConnection.create({ data: { organizationId: organization.id, provider: "APOLLO", state: "DISCONNECTED" } });
       return created;
     });
-    return Response.json({ data: { membershipId: membership.id, created: true } }, { status: 201 });
+    return correlatedJson({ data: { membershipId: membership.id, created: true } }, requestId, { status: 201 });
   } catch (error) {
     const raced = await db.membership.findUnique({ where: { userId: session.user.id } });
-    if (raced) return Response.json({ data: { membershipId: raced.id, created: false } });
-    console.error("Workspace provisioning failed.", error instanceof Error ? error.name : "UnknownError");
-    return apiError("WORKSPACE_SETUP_FAILED", "The workspace could not be prepared.", 500);
+    if (raced) return correlatedJson({ data: { membershipId: raced.id, created: false } }, requestId);
+    logEvent("error", "workspace.provisioning_failed", { correlationId: requestId, errorType: error instanceof Error ? error.name : "UnknownError" });
+    return correlatedJson({ error: { code: "WORKSPACE_SETUP_FAILED", message: "The workspace could not be prepared." } }, requestId, { status: 500 });
   }
 }
