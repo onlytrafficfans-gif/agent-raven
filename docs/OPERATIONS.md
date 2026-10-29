@@ -29,6 +29,8 @@ Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The 
 
 Every app-owned JSON API response returns a bounded correlation ID in both the response body and `x-request-id` header. Preserve that ID in support and incident records to join browser failures, structured logs, provider usage, and audit entries. User-supplied IDs containing spaces, email-like characters, control characters, or more than 64 characters are discarded and replaced with a UUID so untrusted values cannot become log or audit identifiers.
 
+Tenant boundaries are enforced by resolving organization membership from the authenticated server session and applying that organization ID to every prospect query and mutation. The browser suite creates two independent organizations and proves cross-tenant list and update attempts cannot expose or modify the other tenant's record. Preserve this negative-path test whenever adding exports, jobs, caches, files, or administrative routes.
+
 ## Browser security policy
 
 All routes receive a same-origin Content Security Policy, clickjacking denial through CSP and `X-Frame-Options`, MIME sniffing protection, a restricted referrer policy, disabled camera/microphone/geolocation/browser-topic permissions, and same-origin opener/resource isolation. The production browser suite verifies these headers. HSTS is intentionally deferred until the final HTTPS hostname and subdomain policy are verified; enable it at the deployment edge only after that decision.
