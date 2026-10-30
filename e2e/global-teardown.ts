@@ -4,13 +4,13 @@ export default async function globalTeardown() {
   const db = new PrismaClient();
   try {
     const authUsers = await db.user.findMany({
-      where: { OR: [{ email: { startsWith: "e2e-auth-" } }, { email: { startsWith: "e2e-tenant-" } }] },
+      where: { OR: [{ email: { startsWith: "e2e-auth-" } }, { email: { startsWith: "e2e-tenant-" } }, { email: { startsWith: "e2e-role-" } }] },
       include: { memberships: true },
     });
     const authUserIds = authUsers.map(({ id }) => id);
     const authOrganizationIds = authUsers.flatMap(({ memberships }) => memberships.map(({ organizationId }) => organizationId));
     const prospects = await db.prospectCompany.findMany({
-      where: { OR: [{ name: { startsWith: "E2E Roofing " } }, { name: { startsWith: "E2E Tenant " } }] },
+      where: { OR: [{ name: { startsWith: "E2E Roofing " } }, { name: { startsWith: "E2E Tenant " } }, { name: { startsWith: "E2E Role " } }] },
       select: { id: true },
     });
     const prospectIds = prospects.map(({ id }) => id);

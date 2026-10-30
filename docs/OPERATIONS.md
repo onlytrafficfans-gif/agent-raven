@@ -31,6 +31,8 @@ Every app-owned JSON API response returns a bounded correlation ID in both the r
 
 Tenant boundaries are enforced by resolving organization membership from the authenticated server session and applying that organization ID to every prospect query and mutation. The browser suite creates two independent organizations and proves cross-tenant list and update attempts cannot expose or modify the other tenant's record. Preserve this negative-path test whenever adding exports, jobs, caches, files, or administrative routes.
 
+The Phase 1 permission matrix is: Owner and Admin may manage the Apollo connection; Owner, Admin, and Analyst may search, view provider detail, import, create, and update prospects; Viewer is read-only. Automated browser tests exercise all four real authenticated roles against these server boundaries while Apollo is disconnected, so the checks never trigger an external provider call or credit charge.
+
 ## Browser security policy
 
 All routes receive a same-origin Content Security Policy, clickjacking denial through CSP and `X-Frame-Options`, MIME sniffing protection, a restricted referrer policy, disabled camera/microphone/geolocation/browser-topic permissions, and same-origin opener/resource isolation. The production browser suite verifies these headers. HSTS is intentionally deferred until the final HTTPS hostname and subdomain policy are verified; enable it at the deployment edge only after that decision.
