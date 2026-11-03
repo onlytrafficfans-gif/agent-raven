@@ -33,6 +33,8 @@ Tenant boundaries are enforced by resolving organization membership from the aut
 
 The Phase 1 permission matrix is: Owner and Admin may manage the Apollo connection; Owner, Admin, and Analyst may search, view provider detail, import, create, and update prospects; Viewer is read-only. Automated browser tests exercise all four real authenticated roles against these server boundaries while Apollo is disconnected, so the checks never trigger an external provider call or credit charge.
 
+Prospect creation is race-safe at the database boundary. Organization-scoped unique constraints cover provider identity and normalized domain, while the API converts a concurrent unique-key conflict into the already-persisted prospect instead of surfacing an error or creating a second audit event. The desktop/mobile production-browser suite verifies this with 12 simultaneous identical creates and a 12-request replay against PostgreSQL. Preserve that test whenever prospect ingestion, bulk import, jobs, or provider adapters change.
+
 ## Browser security policy
 
 All routes receive a same-origin Content Security Policy, clickjacking denial through CSP and `X-Frame-Options`, MIME sniffing protection, a restricted referrer policy, disabled camera/microphone/geolocation/browser-topic permissions, and same-origin opener/resource isolation. The production browser suite verifies these headers. HSTS is intentionally deferred until the final HTTPS hostname and subdomain policy are verified; enable it at the deployment edge only after that decision.

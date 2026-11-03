@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-10-30 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-11-03 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -13,7 +13,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-30 (America/Los
 | Real company detail | BLOCKED (live) | Explicit user-triggered detail preview, role gate, budget check, and usage record are implemented; a real response requires an authorized provider result and may consume one provider credit |
 | Save five actual companies and persist after reload | BLOCKED (Apollo) | PostgreSQL persistence is verified; five actual Apollo companies require authorized live results |
 | Second market without code changes | BLOCKED | Depends on live provider authorization |
-| Repeat search/save without duplicates | PASS (rules/contract), BLOCKED (live) | Unique provider/domain constraints and P2002 conflict handling implemented; live scenario unavailable |
+| Repeat search/save without duplicates | PASS (database/API), BLOCKED (live Apollo) | Desktop/mobile tests issue 12 simultaneous identical saves, prove exactly one `201 created` response, one durable prospect, one `PROSPECT_CREATED` audit event, a stable ID for every response, and zero new records on a second 12-request replay. Unique provider/domain constraints and P2002 conflict handling are exercised against PostgreSQL; the live Apollo replay remains unavailable. |
 | Invalid credential state | PASS (contract), BLOCKED (live) | HTTP mapping and UI state implemented/tested; no live invalid-key exercise performed |
 | CSV fallback validation and deduplication | PASS | Row validation, IDN/domain normalization, duplicate reporting, PostgreSQL persistence, and clearly labelled source |
 | CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
@@ -23,7 +23,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-30 (America/Los
 | Continuous verification | PASS | GitHub Actions run 1 passed against public commit `5ab7839`, provisioning isolated PostgreSQL 16 and running migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite; the same workflow runs on pull requests and pushes to `main` |
 | Production environment preflight | PASS (contract), BLOCKED (live deployment) | `npm run deploy:check` validates PostgreSQL URL shape, canonical HTTPS auth origin, auth-secret strength, the 32-byte encryption key, password-email configuration, and the Apollo operation budget without printing values. The current local environment correctly fails on its local HTTP origin and absent Resend key; hosting, managed PostgreSQL, and verified sender choices remain owner blockers. |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 16 critical table counts matched, migration status passed, and the isolated database was removed in a measured 11.3-second drill |
-| Desktop/mobile critical flow | PASS (real local runtime) | 22/22 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, tenant isolation, the four-role permission matrix, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
+| Desktop/mobile critical flow | PASS (real local runtime) | 24/24 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, tenant isolation, concurrent deduplication, the four-role permission matrix, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 
 ## Automated evidence
 
@@ -31,7 +31,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-10-30 (America/Los
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
-- `npm run test:e2e`: 22 passed across desktop and mobile, including real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, cross-tenant read/write rejection, same-domain tenant independence, Owner/Admin/Analyst/Viewer permission enforcement, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
+- `npm run test:e2e`: 24 passed across desktop and mobile, including real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, cross-tenant read/write rejection, same-domain tenant independence, 12-request concurrent prospect deduplication plus replay, Owner/Admin/Analyst/Viewer permission enforcement, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
 - `npm audit --omit=dev`: 0 vulnerabilities. Full audit retains five high-severity findings in ESLint's development-only globbing chain; no runtime package is affected, and npm currently proposes an incompatible downgrade of `eslint-config-next` as the automated fix.
 - Source secret-pattern scan: no credential-like value found outside excluded generated/artifact directories.
 - `npm run db:restore-drill`: passed locally with checksum, exact 16-table row-count parity, current migration status, isolated-database cleanup, and an 11.3-second measured duration.
