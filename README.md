@@ -14,7 +14,7 @@ Requirements: Node.js 22+, npm 12+, and PostgreSQL 15+.
 6. For password-reset delivery, configure `RESEND_API_KEY` and a verified `AUTH_EMAIL_FROM` sender. Without both values, the recovery screen reports that delivery is not configured and does not pretend an email was sent.
 7. Run `npm run dev` and sign in at `http://127.0.0.1:3000/sign-in`, or create a self-service account at `/sign-up`.
 
-The browser suite uses real authentication, account registration, workspace provisioning, password-reset tokens, session revocation, PostgreSQL, CSV import, audit, update, and reload paths. Temporary users, workspaces, prospects, sessions, audit rows, and orphan tags are marked and removed automatically. Provider adapter responses remain mocked only inside unit tests; the running application has no fixture mode.
+The browser suite uses real authentication, account registration, workspace provisioning, password-reset tokens, session revocation, PostgreSQL, persistent API throttling, CSV import, audit, update, and reload paths. Temporary users, workspaces, prospects, sessions, rate-limit buckets, audit rows, and orphan tags are marked and removed automatically. Provider adapter responses remain mocked only inside unit tests; the running application has no fixture mode.
 
 The suite defaults to port 3000. If that port is already occupied, run it with an isolated port such as `E2E_PORT=3100 npm run test:e2e`; the test server automatically uses the matching Better Auth origin.
 

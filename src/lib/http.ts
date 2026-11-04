@@ -1,5 +1,6 @@
 import { ProviderError } from "@/lib/provider-errors";
 import { AuthorizationError } from "@/lib/authorization";
+import { RateLimitError } from "@/lib/rate-limit";
 import { ZodError } from "zod";
 
 export function correlatedJson(body: Record<string, unknown>, correlationId: string, init: ResponseInit = {}): Response {
@@ -23,9 +24,20 @@ export function jsonError(error: unknown, correlationId?: string): Response {
     );
   }
   if (error instanceof ZodError) return correlatedJson({ error: { code: "VALIDATION_ERROR", message: "Check the submitted fields.", fields: error.flatten().fieldErrors } }, requestId, { status: 400 });
+  if (error instanceof RateLimitError) {
+    return correlatedJson(
+      { error: { code: error.code, message: error.message, retryAfter: error.retryAfter } },
+      requestId,
+      { status: error.status, headers: { "Retry-After": String(error.retryAfter) } },
+    );
+  }
   if (error instanceof ProviderError) {
     const status = error.code === "INVALID_CREDENTIAL" ? 401 : error.code === "INSUFFICIENT_PERMISSION" ? 403 : error.code === "RATE_LIMITED" ? 429 : error.code === "INVALID_REQUEST" ? 422 : error.code === "BUDGET_BLOCKED" ? 402 : 503;
-    return correlatedJson({ error: { code: error.code, message: error.message, retryAfter: error.retryAfter } }, requestId, { status });
+    return correlatedJson(
+      { error: { code: error.code, message: error.message, retryAfter: error.retryAfter } },
+      requestId,
+      { status, ...(error.code === "RATE_LIMITED" && error.retryAfter ? { headers: { "Retry-After": String(error.retryAfter) } } : {}) },
+    );
   }
   return correlatedJson({ error: { code: "INTERNAL_ERROR", message: "The request could not be completed." } }, requestId, { status: 500 });
 }

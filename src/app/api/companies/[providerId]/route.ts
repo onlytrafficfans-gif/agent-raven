@@ -5,12 +5,14 @@ import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { ProviderError } from "@/lib/provider-errors";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { decryptCredential } from "@/lib/security";
 
 export async function GET(request: Request, { params }: { params: Promise<{ providerId: string }> }) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "apolloOperation" });
     const { providerId } = await params;
     const connection = await db.integrationConnection.findUnique({
       where: { organizationId_provider: { organizationId: ctx.organizationId, provider: "APOLLO" } },

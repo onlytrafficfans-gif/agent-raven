@@ -3,6 +3,7 @@ import { ApolloClient } from "@/lib/apollo";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { integrationCredentialSchema } from "@/lib/schemas";
 import { encryptCredential } from "@/lib/security";
 
@@ -10,6 +11,7 @@ export async function POST(request: Request) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "apolloConnection" });
     const { apiKey } = integrationCredentialSchema.parse(await request.json());
     await new ApolloClient(apiKey).testConnection();
     const encryptedCredential = encryptCredential(apiKey);
@@ -36,6 +38,7 @@ export async function DELETE(request: Request) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "integrationMutation" });
     await db.$transaction([
       db.integrationConnection.upsert({
         where: { organizationId_provider: { organizationId: ctx.organizationId, provider: "APOLLO" } },

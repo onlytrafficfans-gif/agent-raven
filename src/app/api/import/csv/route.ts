@@ -4,11 +4,13 @@ import { parseProspectCsv } from "@/lib/csv";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/rate-limit";
 
 export async function POST(request: Request) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "csvImport" });
     const form = await request.formData();
     const file = form.get("file");
     if (!(file instanceof File) || file.size > 2_000_000) {

@@ -3,12 +3,14 @@ import { requireContext } from "@/lib/authorization";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { prospectUpdateSchema } from "@/lib/schemas";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "prospectUpdate" });
     const { id } = await params;
     const input = prospectUpdateSchema.parse(await request.json());
     const existing = await db.prospectCompany.findFirst({ where: { id, organizationId: ctx.organizationId } });

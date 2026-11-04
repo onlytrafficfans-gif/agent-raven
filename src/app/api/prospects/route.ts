@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { normalizeDomain } from "@/lib/domain";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
+import { enforceRateLimit } from "@/lib/rate-limit";
 import { saveProspectSchema } from "@/lib/schemas";
 import { serializeProspect } from "@/lib/serialization";
 
@@ -11,6 +12,7 @@ export async function POST(request: Request) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "prospectCreate" });
     const input = saveProspectSchema.parse(await request.json());
     const normalizedDomain = normalizeDomain(input.domain ?? input.websiteUrl);
     const source = input.providerName === "Apollo" ? "APOLLO" : "CSV_IMPORT";
