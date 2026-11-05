@@ -16,6 +16,8 @@ Requirements: Node.js 22+, npm 12+, and PostgreSQL 15+.
 
 The browser suite uses real authentication, account registration, workspace provisioning, password-reset tokens, session revocation, PostgreSQL, persistent API throttling, CSV import, audit, update, and reload paths. Temporary users, workspaces, prospects, sessions, rate-limit buckets, audit rows, and orphan tags are marked and removed automatically. Provider adapter responses remain mocked only inside unit tests; the running application has no fixture mode.
 
+Run `npm run auth:cleanup` for a read-only count of expired sessions and password-reset verifications. Run `npm run auth:cleanup:execute` from a trusted maintenance environment to delete only records expired at the command cutoff. Schedule the execute command daily after production database access is configured; it never prints tokens, email addresses, or session identifiers.
+
 The suite defaults to port 3000. If that port is already occupied, run it with an isolated port such as `E2E_PORT=3100 npm run test:e2e`; the test server automatically uses the matching Better Auth origin.
 
 ## Verification

@@ -18,6 +18,8 @@
     "db:seed": "tsx prisma/seed.ts",
     "db:backup": "tsx scripts/database-recovery.ts backup",
     "db:restore-drill": "tsx scripts/database-recovery.ts drill",
+    "auth:cleanup": "tsx scripts/cleanup-expired-auth.ts",
+    "auth:cleanup:execute": "tsx scripts/cleanup-expired-auth.ts --execute",
     "deploy:check": "tsx scripts/check-production-env.ts"
   },
   "dependencies": {

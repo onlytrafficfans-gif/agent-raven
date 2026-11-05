@@ -7,6 +7,12 @@
 - `INTEGRATION_ENCRYPTION_KEY`: 32 random bytes encoded as base64. Credentials are AES-256-GCM envelopes tagged `v1`. To rotate, deploy code that can read the old and new key IDs, re-encrypt rows transactionally, verify connection health, then retire the old key. The current Phase 1 UI disconnect/reconnect flow is the safest manual rotation path.
 - Apollo credentials are returned by neither list nor mutation interfaces. Logs redact key/token/secret/password/credential fields.
 
+## Authentication retention
+
+Run `npm run auth:cleanup` to inspect counts without changing data. Run `npm run auth:cleanup:execute` from a trusted maintenance environment to transactionally delete sessions and verification records whose `expiresAt` is at or before the captured cutoff. Output contains only the cutoff and aggregate before/deleted/after counts; it never contains tokens, user identifiers, email addresses, or secret values. Schedule the execute command daily on durable worker or hosting cron infrastructure after production database access is configured. Do not run it inside an ordinary serverless request.
+
+The cleanup integration test creates isolated expired and active records, proves exactly the expired session and verification are deleted, and proves the active pair remains. On November 5, 2026 at 5:57 AM Pacific, the local dry run found 60 expired sessions and zero expired verification rows; the measured execute run removed those 60 sessions and preserved the active session.
+
 ## Database recovery
 
 Use managed PostgreSQL point-in-time recovery with daily backups. Quarterly, restore the latest backup into an isolated database, verify migrations and critical table counts, then destroy the isolated copy. Credential ciphertext is useful only with the separately protected encryption key; back up and rotate that key using the hosting provider's secret manager.

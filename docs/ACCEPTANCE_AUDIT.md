@@ -1,12 +1,13 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-11-04 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-11-05 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
 | Protected authentication and organization RBAC | PASS | Better Auth owner login, server membership lookup, protected dashboard layout, and a real four-user browser matrix. Owner/Admin can disconnect Apollo; Analyst/Viewer cannot. Owner/Admin/Analyst can search, view detail, create, and update prospects; Viewer is read-only. Disconnected provider states prove routing without live or paid calls. |
 | Tenant-isolated prospect reads and writes | PASS | Desktop/mobile tests create two real users and organizations in PostgreSQL, prove each tenant cannot list the other's prospect, reject a cross-tenant update as `NOT_FOUND`, allow the same normalized domain independently in both organizations, and confirm the original record remains unchanged. |
 | Self-service account recovery and session choice | PASS (local), BLOCKED (email delivery) | Real signup creates a PostgreSQL user, credential account, isolated organization, Owner membership, and disconnected Apollo connection; reset-token consumption changes the password and revokes sessions; checked/unchecked Remember me produces persistent/session cookies. Live email delivery awaits configured Resend credentials and a verified sender. |
+| Expired authentication-data retention | PASS (local/contract) | A dry-run/execute maintenance command reports only aggregate counts and transactionally deletes sessions and verification rows expired at the captured cutoff. The database integration test proves expired records are removed while active records remain; a local run removed 60 expired sessions, preserved the active session, and found no expired verification rows. Production scheduling awaits the selected durable worker or hosting cron. |
 | Migrations and durable PostgreSQL persistence | PASS (local) | PostgreSQL 16.15 initialized; migration deployed; CSV record, audit note/status update, and reload durability exercised through the browser |
 | Apollo credential encryption and zero-credit connection test | PASS (contract) | AES-256-GCM helpers; server-only route; adapter test asserts `/auth/health`; no credential echoed |
 | Live roofing-company search in Las Vegas | BLOCKED | No authorized Apollo credential and no authorization for the one-credit search page |
@@ -28,7 +29,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-11-04 (America/Los
 
 ## Automated evidence
 
-- `npm test`: 7 files, 26 tests passed.
+- `npm test`: 8 files, 27 tests passed, including scoped PostgreSQL authentication-retention cleanup.
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
