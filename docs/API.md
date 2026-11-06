@@ -15,7 +15,8 @@ All application interfaces return JSON unless noted. App-owned JSON responses in
 | `GET /api/prospects` | Any member | optional `q`, `status` query | organization-scoped prospects | unauthorized, internal | Safe read |
 | `PATCH /api/prospects/:id` | Owner, Admin, Analyst | optional status, note, tags | updated prospect | validation, not found, rate limit, unauthorized | Status and normalized tag replacement are idempotent; notes are append operations |
 | `POST /api/import/csv` | Owner, Admin, Analyst | multipart `file`, max 2 MB | created/duplicate/error summary and row errors | invalid file, validation, rate limit, unauthorized | Normalized-domain uniqueness prevents duplicates |
-| `GET /api/health` | Public, sanitized | none | app/database aggregate status, non-secret Apollo description | HTTP 503 when database unavailable | Safe read, `no-store` |
+| `GET /api/health/live` | Public, sanitized liveness | none | application status and timestamp | none while the process can serve requests | Safe read, `no-store`; does not touch dependencies |
+| `GET /api/health` | Public, sanitized readiness | none | app/database status, rounded database latency and warning threshold, non-secret Apollo description | HTTP 503 when database unavailable | Safe read, `no-store`; emits `Server-Timing` and `x-health-status` |
 
 Apollo organization search is currently `POST https://api.apollo.io/api/v1/mixed_companies/search`. Connection testing uses the zero-credit `GET /api/v1/auth/health` endpoint. Organization detail uses `GET /api/v1/organizations/{id}` and can consume one credit; budget authorization should be confirmed before exercising that live path.
 

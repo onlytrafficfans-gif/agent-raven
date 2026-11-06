@@ -13,6 +13,12 @@ Run `npm run auth:cleanup` to inspect counts without changing data. Run `npm run
 
 The cleanup integration test creates isolated expired and active records, proves exactly the expired session and verification are deleted, and proves the active pair remains. On November 5, 2026 at 5:57 AM Pacific, the local dry run found 60 expired sessions and zero expired verification rows; the measured execute run removed those 60 sessions and preserved the active session.
 
+## Health monitoring
+
+Use `GET /api/health/live` only to determine whether the application process can serve HTTP. It performs no database or provider work and stays independent from downstream failures. Use `GET /api/health` for traffic readiness: it executes a real PostgreSQL query, reports rounded query latency, marks latency of 250 ms or more as `degraded`, returns HTTP 503 only when the database is unavailable, and emits `Server-Timing`, `x-health-status`, and the correlated request ID. Both routes are public, `no-store`, and return sanitized status only; Apollo credential state remains restricted to authenticated organization members.
+
+Configure the hosting platform liveness check against `/api/health/live` and readiness/deployment verification against `/api/health`. Alert on any readiness HTTP 503, sustained `x-health-status: degraded`, or structured `health.database_degraded` log. Do not restart otherwise healthy application processes merely because a downstream database is temporarily unavailable.
+
 ## Database recovery
 
 Use managed PostgreSQL point-in-time recovery with daily backups. Quarterly, restore the latest backup into an isolated database, verify migrations and critical table counts, then destroy the isolated copy. Credential ciphertext is useful only with the separately protected encryption key; back up and rotate that key using the hosting provider's secret manager.
