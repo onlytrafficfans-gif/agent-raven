@@ -32,12 +32,13 @@ npm run build
 npm run test:e2e
 npm run db:restore-drill
 npm run deploy:check
+DEPLOYMENT_URL=https://your-canonical-host.example npm run deploy:verify
 ```
 
 The recovery drill creates a private PostgreSQL dump, restores it into a randomly named isolated database, verifies critical table counts and migrations, and removes the isolated database. Recovery artifacts remain local under the ignored `.recovery/` directory.
 
-See [API contracts](docs/API.md), [operations](docs/OPERATIONS.md), and the [acceptance map](docs/PHASE1_IMPLEMENTATION_PLAN.md).
+See [API contracts](docs/API.md), [operations](docs/OPERATIONS.md), the [production release checklist](docs/RELEASE_CHECKLIST.md), and the [acceptance map](docs/PHASE1_IMPLEMENTATION_PLAN.md).
 
 ## Deployment
 
-The application is Vercel-compatible. Provision managed PostgreSQL, set the documented environment variables, run `npm run deploy:check` before release, run `npm run db:deploy` in the release pipeline, seed the first owner through a trusted administrative environment, and deploy. The deployment check validates configuration without printing secret values; it does not verify external account ownership or provider acceptance.
+The application is Vercel-compatible. Provision managed PostgreSQL, set the documented environment variables, run `npm run deploy:check` before release, run `npm run db:deploy` in the release pipeline, seed the first owner through a trusted administrative environment, and deploy. Then run `npm run deploy:verify` against the canonical HTTPS origin. Preflight validates configuration shape; post-deploy verification checks the live application, database readiness, correlation/timing contract, and sign-in security headers. Neither command proves external account ownership or Apollo provider acceptance.

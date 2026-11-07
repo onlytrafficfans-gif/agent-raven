@@ -24,6 +24,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 | Prospect CRM | `/prospects`, `/api/prospects/[id]`, notes/tags/status audit | integration + Playwright reload/filter/edit |
 | CSV fallback | `/api/import/csv`, CSV template and row-level validation | parser/normalization/dedup tests |
 | Security / health / logging | AES-GCM encryption, redaction, correlation IDs, `/api/health`, audit records | secret scan, helper tests, endpoint inspection |
+| Production release verification | `scripts/verify-deployment.ts`, canonical-origin and response-contract checks, `docs/RELEASE_CHECKLIST.md` | unit contract tests; production-build smoke verification; public deployment remains blocked |
 | Documentation | `docs/API.md`, `docs/OPERATIONS.md`, `.env.example`, `README.md` | manual inspection |
 
 ## Honest acceptance boundary

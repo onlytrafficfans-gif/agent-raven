@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-11-06 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-11-07 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -25,15 +25,17 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-11-06 (America/Los
 | Persistent API abuse protection | PASS | PostgreSQL fixed-window buckets protect Apollo search/detail and connection tests plus integration, CSV, prospect-create, and prospect-update mutations across server instances. Desktop/mobile tests prove the prospect-create boundary persists exactly 60 records/audits, blocks request 61 with HTTP 429, returns a positive matching `Retry-After` contract, and stores the authoritative counter. |
 | Continuous verification | PASS | GitHub Actions run 1 passed against public commit `5ab7839`, provisioning isolated PostgreSQL 16 and running migrations, typecheck, lint, unit tests, production build, and the complete desktop/mobile Playwright suite; the same workflow runs on pull requests and pushes to `main` |
 | Production environment preflight | PASS (contract), BLOCKED (live deployment) | `npm run deploy:check` validates PostgreSQL URL shape, canonical HTTPS auth origin, auth-secret strength, the 32-byte encryption key, password-email configuration, and the Apollo operation budget without printing values. The current local environment correctly fails on its local HTTP origin and absent Resend key; hosting, managed PostgreSQL, and verified sender choices remain owner blockers. |
+| Post-deployment smoke verification and release rollback | PASS (local/contract), BLOCKED (live deployment) | The verifier rejects non-canonical or insecure remote origins, follows no redirects, proves sanitized liveness and PostgreSQL-backed readiness with matching correlation/timing headers, and checks the direct sign-in security policy without retaining response content. The release checklist requires CI, backup, migration, deployed evidence, manual auth checks, and a compatible rollback. Public-host evidence awaits hosting and a canonical HTTPS URL. |
 | Backup and isolated restore | PASS (local) | Private checksum-protected PostgreSQL dump restored into an isolated database; 17 critical table counts, including the persistent rate-limit table, matched; migration status passed; and the isolated database was removed in a measured 13.4-second drill |
 | Desktop/mobile critical flow | PASS (real local runtime) | 28/28 Playwright checks at 1440×1000 and Pixel 7 size using Better Auth and PostgreSQL; liveness/readiness probes, signup, workspace provisioning, reset-token consumption, session revocation, Remember me cookies, auth rejection, tenant isolation, persistent write throttling, concurrent deduplication, the four-role permission matrix, security headers, disconnected provider state, CSV import, select, status/note/tag edit, reload, filters, sorting, screenshots, and interrupted-request recovery verified |
 
 ## Automated evidence
 
-- `npm test`: 9 files, 30 tests passed, including scoped PostgreSQL authentication-retention cleanup and database-health classification.
+- `npm test`: 10 files, 38 tests passed, including scoped PostgreSQL authentication-retention cleanup, database-health classification, and deployment-verification fail-closed contracts.
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
+- `DEPLOYMENT_URL=http://127.0.0.1:3200 DEPLOYMENT_VERIFY_ALLOW_HTTP=true npm run deploy:verify`: passed against the built production server with operational liveness, operational PostgreSQL readiness at 65 ms against the 250 ms warning threshold, and the complete sign-in security policy. The HTTP exception was restricted to loopback; a public deployment still requires HTTPS.
 - `npm run test:e2e`: 28 passed across desktop and mobile, including sanitized liveness/readiness with real PostgreSQL latency, real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, cross-tenant read/write rejection, same-domain tenant independence, PostgreSQL-backed write throttling with `Retry-After`, 12-request concurrent prospect deduplication plus replay, Owner/Admin/Analyst/Viewer permission enforcement, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
 - `npm audit --omit=dev`: 0 vulnerabilities. Full audit retains five high-severity findings in ESLint's development-only globbing chain; no runtime package is affected, and npm currently proposes an incompatible downgrade of `eslint-config-next` as the automated fix.
 - Source secret-pattern scan: no credential-like value found outside excluded generated/artifact directories.

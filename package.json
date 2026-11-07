@@ -20,7 +20,8 @@
     "db:restore-drill": "tsx scripts/database-recovery.ts drill",
     "auth:cleanup": "tsx scripts/cleanup-expired-auth.ts",
     "auth:cleanup:execute": "tsx scripts/cleanup-expired-auth.ts --execute",
-    "deploy:check": "tsx scripts/check-production-env.ts"
+    "deploy:check": "tsx scripts/check-production-env.ts",
+    "deploy:verify": "tsx scripts/verify-deployment.ts"
   },
   "dependencies": {
     "@better-auth/prisma-adapter": "^1.7.10",
