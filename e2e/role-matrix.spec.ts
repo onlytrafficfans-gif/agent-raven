@@ -112,6 +112,27 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
       expect(body.prospects).toHaveLength(3);
     }
 
+    for (const actor of actors) {
+      const response = await actor.page.request.get("/api/prospects/export");
+      if (actor.role === "OWNER" || actor.role === "ADMIN") {
+        expect(response.status()).toBe(200);
+        expect(response.headers()["content-type"]).toContain("text/csv");
+        expect(response.headers()["content-disposition"]).toMatch(/^attachment; filename="agent-raven-prospects-\d{4}-\d{2}-\d{2}\.csv"$/);
+        expect(response.headers()["cache-control"]).toContain("no-store");
+        expect(response.headers()["x-request-id"]).toBe(`e2e-role-${actor.role.toLowerCase()}`);
+        const csv = await response.text();
+        for (const writableRole of ["OWNER", "ADMIN", "ANALYST"]) expect(csv).toContain(`E2E Role ${writableRole} ${suffix}`);
+        expect(csv).not.toContain(`E2E Role VIEWER ${suffix}`);
+      } else {
+        await expectCode(response, 403, "FORBIDDEN");
+      }
+    }
+
+    await actors[0].page.goto("/prospects");
+    await expect(actors[0].page.getByRole("link", { name: "Export CSV" })).toBeVisible();
+    await actors[3].page.goto("/prospects");
+    await expect(actors[3].page.getByRole("link", { name: "Export CSV" })).toHaveCount(0);
+
     for (const actor of actors.filter(({ role }) => role !== "VIEWER")) {
       const response = await actor.page.request.patch(`/api/prospects/${created.get(actor.role)}`, {
         data: { status: "QUALIFIED" },
@@ -132,6 +153,9 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
     });
     expect(persisted).toHaveLength(3);
     expect(persisted.every(({ status }) => status === "QUALIFIED")).toBe(true);
+    const exportAudits = await db.auditLog.findMany({ where: { organizationId: sharedOrganizationId, action: "PROSPECTS_EXPORTED" } });
+    expect(exportAudits).toHaveLength(2);
+    expect(exportAudits.map(({ correlationId }) => correlationId).sort()).toEqual(["e2e-role-admin", "e2e-role-owner"]);
   } finally {
     await Promise.all(actors.map(({ context }) => context.close()));
     const emails = actors.map(({ email }) => email);

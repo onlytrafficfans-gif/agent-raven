@@ -22,6 +22,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 | Search / history / budget | `/api/search`, search UI, `SearchQuery`, `SearchRun`, `IntegrationUsage` | validation, budget and error mapping tests; disconnected real-runtime browser state |
 | Company detail / save | `/api/companies/[providerId]`, `/api/prospects` | normalization and idempotency tests; DB concurrency test |
 | Prospect CRM | `/prospects`, `/api/prospects/[id]`, notes/tags/status audit | integration + Playwright reload/filter/edit |
+| Prospect portability | `/api/prospects/export`, restricted CSV control, export audit event | formula-safety unit test + role and persistence browser matrix |
 | CSV fallback | `/api/import/csv`, CSV template and row-level validation | parser/normalization/dedup tests |
 | Security / health / logging | AES-GCM encryption, redaction, correlation IDs, `/api/health`, audit records | secret scan, helper tests, endpoint inspection |
 | Production release verification | `scripts/verify-deployment.ts`, canonical-origin and response-contract checks, `docs/RELEASE_CHECKLIST.md` | unit contract tests; production-build smoke verification; public deployment remains blocked |

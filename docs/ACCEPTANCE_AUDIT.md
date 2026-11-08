@@ -1,6 +1,6 @@
 # Phase 1 acceptance audit
 
-Initial audit date: 2026-10-17. Latest local validation: 2026-11-07 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
+Initial audit date: 2026-10-17. Latest local validation: 2026-11-08 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
@@ -18,6 +18,7 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-11-07 (America/Los
 | Invalid credential state | PASS (contract), BLOCKED (live) | HTTP mapping and UI state implemented/tested; no live invalid-key exercise performed |
 | CSV fallback validation and deduplication | PASS | Row validation, IDN/domain normalization, duplicate reporting, PostgreSQL persistence, and clearly labelled source |
 | CRM filters, sorting, tags, and notes | PASS | Desktop/mobile browser flow persists qualified status, note, and normalized tags; reload proves durability; source, industry, location, status, tag/text search, and company-name sorting are wired to real records |
+| Restricted prospect data export | PASS | Owner/Admin-only UTF-8 CSV export reads a repeatable organization-scoped PostgreSQL snapshot, includes saved tags and notes, excludes secrets and raw provenance, neutralizes spreadsheet formulas, is rate/size limited, and emits an aggregate audit event. Desktop/mobile role tests prove Analyst/Viewer denial and verify exported tenant records. |
 | Browser payload/log/artifact secret leakage | PASS (source/local) | credential response omission and redaction tests; live provider network inspection blocked |
 | Browser security headers | PASS | Production responses omit `X-Powered-By` and enforce CSP, frame denial, MIME sniffing protection, restricted referrers and permissions, and same-origin opener/resource policies; verified by Playwright |
 | Request correlation and log safety | PASS | Every app-owned JSON route emits the same bounded ID in the response body and `x-request-id` header; unsafe, secret-bearing, and oversized inbound IDs are replaced with UUIDs. Unit tests cover normalization and sanitized errors, while desktop/mobile browser tests verify unauthenticated API correlation. |
@@ -31,12 +32,12 @@ Initial audit date: 2026-10-17. Latest local validation: 2026-11-07 (America/Los
 
 ## Automated evidence
 
-- `npm test`: 10 files, 38 tests passed, including scoped PostgreSQL authentication-retention cleanup, database-health classification, and deployment-verification fail-closed contracts.
+- `npm test`: 11 files, 39 tests passed, including scoped PostgreSQL authentication-retention cleanup, database-health classification, deployment-verification fail-closed contracts, and formula-safe CSV export serialization.
 - `npm run lint`: passed with no findings.
 - `npm run typecheck`: passed in strict mode.
 - `npm run build`: Next.js production build passed; all Phase 1 routes compiled.
 - `DEPLOYMENT_URL=http://127.0.0.1:3200 DEPLOYMENT_VERIFY_ALLOW_HTTP=true npm run deploy:verify`: passed against the built production server with operational liveness, operational PostgreSQL readiness at 65 ms against the 250 ms warning threshold, and the complete sign-in security policy. The HTTP exception was restricted to loopback; a public deployment still requires HTTPS.
-- `npm run test:e2e`: 28 passed across desktop and mobile, including sanitized liveness/readiness with real PostgreSQL latency, real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, cross-tenant read/write rejection, same-domain tenant independence, PostgreSQL-backed write throttling with `Retry-After`, 12-request concurrent prospect deduplication plus replay, Owner/Admin/Analyst/Viewer permission enforcement, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
+- `npm run test:e2e`: 28 passed across desktop and mobile, including sanitized liveness/readiness with real PostgreSQL latency, real signup/workspace creation, reset-token consumption, session revocation, Remember me cookie behavior, unauthenticated route/API rejection, cross-tenant read/write rejection, same-domain tenant independence, PostgreSQL-backed write throttling with `Retry-After`, 12-request concurrent prospect deduplication plus replay, Owner/Admin/Analyst/Viewer permission enforcement including restricted audited exports, security headers, CSV persistence, audited status/note/tag updates, reload durability, real CRM filtering, and recovery from interrupted authentication, Apollo connection, CSV import, and prospect-update requests.
 - `npm audit --omit=dev`: 0 vulnerabilities. Full audit retains five high-severity findings in ESLint's development-only globbing chain; no runtime package is affected, and npm currently proposes an incompatible downgrade of `eslint-config-next` as the automated fix.
 - Source secret-pattern scan: no credential-like value found outside excluded generated/artifact directories.
 - `npm run db:restore-drill`: passed locally with checksum, exact 17-table row-count parity, current migration status, isolated-database cleanup, and a 13.4-second measured duration.

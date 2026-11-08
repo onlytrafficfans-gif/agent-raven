@@ -13,5 +13,6 @@ describe("rate-limit policy", () => {
     expect(rateLimitPolicies.apolloConnection.sharedByOrganization).toBe(true);
     expect(rateLimitPolicies.prospectCreate.sharedByOrganization).toBe(false);
     expect(rateLimitPolicies.prospectUpdate.sharedByOrganization).toBe(false);
+    expect(rateLimitPolicies.prospectExport).toMatchObject({ limit: 5, sharedByOrganization: false });
   });
 });

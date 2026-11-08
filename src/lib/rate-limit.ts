@@ -9,6 +9,7 @@ export const rateLimitPolicies = {
   csvImport: { limit: 10, windowMs: 60_000, sharedByOrganization: false },
   prospectCreate: { limit: 60, windowMs: 60_000, sharedByOrganization: false },
   prospectUpdate: { limit: 120, windowMs: 60_000, sharedByOrganization: false },
+  prospectExport: { limit: 5, windowMs: 10 * 60_000, sharedByOrganization: false },
 } as const;
 
 export type RateLimitPolicyName = keyof typeof rateLimitPolicies;
