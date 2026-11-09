@@ -20,6 +20,8 @@ Run `npm run auth:cleanup` for a read-only count of expired sessions and passwor
 
 Use `/api/health/live` for process liveness and `/api/health` for database-backed readiness. The readiness response is public but sanitized, reports rounded PostgreSQL latency, and returns HTTP 503 only when the database query fails.
 
+Owner and Admin users can inspect real organization-scoped Apollo usage and sanitized audit actions in Settings. The view reads PostgreSQL directly, uses a UTC calendar-month window, and never exposes credentials, audit metadata, or provider response content. Analyst and Viewer roles cannot access this operational evidence.
+
 The suite defaults to port 3000. If that port is already occupied, run it with an isolated port such as `E2E_PORT=3100 npm run test:e2e`; the test server automatically uses the matching Better Auth origin.
 
 ## Verification

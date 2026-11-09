@@ -11,6 +11,7 @@ Accepted brand reference: `public/brand/agent-raven-flagship.png` (byte-identica
 | Chrome material | Concept uses brushed-silver section rails and buttons | Render uses directional multi-stop neutral chrome on section headers and actions with restrained violet edge light | Match |
 | Workflow hierarchy | Discovery sequence, System status, and Discovery record are the three primary regions | Render preserves all three at 1440×1000 with actual database counts and connection state | Match |
 | Real state boundary | No fake analytics or invented metrics | Runtime shows real PostgreSQL totals, real Apollo disconnected state, and only functional Phase 1 actions | Match |
+| Operator evidence | Production operations require provider usage and action traceability without invented KPIs | Owner/Admin Settings renders real monthly usage, connection state, prospect totals, and sanitized audit actions from PostgreSQL; other roles see an explicit restriction | Match |
 | Tables and inner controls | Dark rows, chrome headers/actions, violet selection and focus | Prospect render uses violet selected row/status, grayscale table chrome, and chrome Save changes action | Match |
 | Mobile continuation | Compact utility header and persistent essential navigation | Pixel 7 render stacks filters and detail panel and exposes Overview, Find Businesses, Prospects, Integrations, and Settings in the bottom rail | Match |
 | Theme interaction | Visible dark/light mode control | Automated test switches to light, reloads, and verifies persisted `data-theme="light"` | Pass |

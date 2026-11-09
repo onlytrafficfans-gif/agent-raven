@@ -133,6 +133,20 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
     await actors[3].page.goto("/prospects");
     await expect(actors[3].page.getByRole("link", { name: "Export CSV" })).toHaveCount(0);
 
+    for (const actor of actors) {
+      await actor.page.goto("/settings");
+      await expect(actor.page.getByRole("heading", { name: "Operations evidence" })).toBeVisible();
+      if (actor.role === "OWNER" || actor.role === "ADMIN") {
+        await expect(actor.page.getByText("Live organization-scoped PostgreSQL state.")).toBeVisible();
+        await expect(actor.page.getByRole("heading", { name: "Recent audit activity" })).toBeVisible();
+        await expect(actor.page.getByText("PROSPECTS EXPORTED").first()).toBeVisible();
+        await expect(actor.page.getByText(`e2e-role-${actor.role.toLowerCase()}`).first()).toBeVisible();
+      } else {
+        await expect(actor.page.getByText("Owner or Admin access required")).toBeVisible();
+        await expect(actor.page.getByRole("heading", { name: "Recent audit activity" })).toHaveCount(0);
+      }
+    }
+
     for (const actor of actors.filter(({ role }) => role !== "VIEWER")) {
       const response = await actor.page.request.patch(`/api/prospects/${created.get(actor.role)}`, {
         data: { status: "QUALIFIED" },

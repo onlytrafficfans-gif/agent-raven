@@ -59,6 +59,10 @@ All routes receive a same-origin Content Security Policy, clickjacking denial th
 
 Apollo currently documents organization search as one credit per page (up to 100 results), while organization detail/enrichment can consume one credit per organization. The app enforces both a 10-per-minute organization throttle and its monthly operation limit before provider calls; Apollo's plan, credit balance, scopes, and per-endpoint rate limits remain the external source of truth. PostgreSQL and Vercel costs depend on the selected plans and traffic.
 
+## Operator evidence
+
+The Settings page exposes organization-scoped operating evidence only to Owner and Admin roles. It reads a repeatable PostgreSQL snapshot containing the Apollo connection state, current UTC-calendar-month operation count and usage units, saved-prospect count, aggregate audit count, and the latest 25 audit actions. It deliberately omits audit metadata, integration diagnostics, credentials, email addresses, and provider response content. Analyst and Viewer roles receive an explicit restricted state. Use request IDs from the table to correlate a material action with structured application logs; do not treat the dashboard as a replacement for deployment-level alerting or provider billing records.
+
 ## Continuous verification
 
 `.github/workflows/ci.yml` runs on every pull request and every push to `main`. It provisions an isolated PostgreSQL 16 service, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, validates the production environment contract, and runs the complete desktop/mobile browser suite. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
