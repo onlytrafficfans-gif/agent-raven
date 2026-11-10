@@ -19,7 +19,17 @@ export async function POST(request: Request) {
     const result = parseProspectCsv(await file.text());
     let created = 0;
     let duplicates = 0;
+    let suppressed = 0;
+    const suppressedDomains = new Set((await db.prospectSuppression.findMany({
+      where: { organizationId: ctx.organizationId, normalizedDomain: { in: result.valid.map((row) => row.normalizedDomain) } },
+      select: { normalizedDomain: true },
+    })).flatMap(({ normalizedDomain }) => normalizedDomain ? [normalizedDomain] : []));
     for (const row of result.valid) {
+      if (suppressedDomains.has(row.normalizedDomain)) {
+        suppressed++;
+        result.errors.push({ row: row.row, message: "This domain was deleted and suppressed from re-import." });
+        continue;
+      }
       try {
         await db.$transaction(async (tx) => {
           const prospect = await tx.prospectCompany.create({
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
         else result.errors.push({ row: row.row, message: "Row could not be persisted." });
       }
     }
-    return correlatedJson({ summary: { valid: result.valid.length, created, duplicates, errors: result.errors.length }, errors: result.errors }, requestId);
+    return correlatedJson({ summary: { valid: result.valid.length, created, duplicates, suppressed, errors: result.errors.length }, errors: result.errors }, requestId);
   } catch (error) {
     return jsonError(error, requestId);
   }

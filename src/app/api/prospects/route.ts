@@ -21,6 +21,19 @@ export async function POST(request: Request) {
       ...(providerId ? [{ providerName: input.providerName, providerOrganizationId: providerId }] : []),
       ...(normalizedDomain ? [{ normalizedDomain }] : []),
     ];
+    const suppressed = await db.prospectSuppression.findFirst({
+      where: {
+        organizationId: ctx.organizationId,
+        OR: [
+          ...(providerId ? [{ providerName: input.providerName, providerOrganizationId: providerId }] : []),
+          ...(normalizedDomain ? [{ normalizedDomain }] : []),
+        ],
+      },
+      select: { id: true },
+    });
+    if (suppressed) {
+      return correlatedJson({ error: { code: "SUPPRESSED", message: "This prospect was deleted and suppressed from re-import." } }, requestId, { status: 409 });
+    }
     const matches = await db.prospectCompany.findMany({ where: { organizationId: ctx.organizationId, OR: identity } });
     if (matches.length) {
       if (new Set(matches.map((item) => item.id)).size > 1) {

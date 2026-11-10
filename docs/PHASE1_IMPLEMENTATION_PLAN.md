@@ -23,6 +23,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 | Company detail / save | `/api/companies/[providerId]`, `/api/prospects` | normalization and idempotency tests; DB concurrency test |
 | Prospect CRM | `/prospects`, `/api/prospects/[id]`, notes/tags/status audit | integration + Playwright reload/filter/edit |
 | Prospect portability | `/api/prospects/export`, restricted CSV control, export audit event | formula-safety unit test + role and persistence browser matrix |
+| Privacy deletion and suppression | `ProspectSuppression`, confirmed Owner/Admin delete, replay checks across API and CSV | migration + role/tenant browser matrix + isolated restore drill |
 | CSV fallback | `/api/import/csv`, CSV template and row-level validation | parser/normalization/dedup tests |
 | Security / health / logging | AES-GCM encryption, redaction, correlation IDs, `/api/health`, audit records | secret scan, helper tests, endpoint inspection |
 | Operator observability | Owner/Admin Settings evidence from integration usage and append-oriented audit records | UTC-window unit tests + desktop/mobile four-role browser matrix |

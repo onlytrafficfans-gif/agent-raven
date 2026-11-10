@@ -47,7 +47,7 @@ export function SearchWorkspace({connected}:{connected:boolean}){
       const response=await fetch("/api/import/csv",{method:"POST",body});
       const data=await response.json().catch(()=>null);
       if(!response.ok){setImportMessage(data?.error?.message??"CSV import failed. Try again.");return}
-      setImportMessage(`${data.summary.valid} valid row(s), ${data.summary.created} created, ${data.summary.duplicates} duplicate(s), ${data.summary.errors} error(s).`);
+      setImportMessage(`${data.summary.valid} valid row(s), ${data.summary.created} created, ${data.summary.duplicates} duplicate(s), ${data.summary.suppressed??0} suppressed, ${data.summary.errors} error(s).`);
     }catch{
       setImportMessage("Agent.Raven could not reach the server. The CSV was not imported; try again.");
     }finally{

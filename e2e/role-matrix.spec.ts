@@ -130,8 +130,15 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
 
     await actors[0].page.goto("/prospects");
     await expect(actors[0].page.getByRole("link", { name: "Export CSV" })).toBeVisible();
+    await expect(actors[0].page.getByRole("button", { name: "Delete prospect" })).toBeVisible();
+    await actors[2].page.goto("/prospects");
+    await expect(actors[2].page.getByRole("button", { name: "Save changes" })).toBeVisible();
+    await expect(actors[2].page.getByRole("button", { name: "Delete prospect" })).toHaveCount(0);
     await actors[3].page.goto("/prospects");
     await expect(actors[3].page.getByRole("link", { name: "Export CSV" })).toHaveCount(0);
+    await expect(actors[3].page.getByRole("button", { name: "Save changes" })).toHaveCount(0);
+    await expect(actors[3].page.getByText("Viewer access is read-only.")).toBeVisible();
+    await expect(actors[3].page.getByLabel("Status", { exact: true }).last()).toBeDisabled();
 
     for (const actor of actors) {
       await actor.page.goto("/settings");
@@ -162,6 +169,54 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
       "FORBIDDEN",
     );
 
+    const deletionInputs = new Map<Role, { name: string; domain: string }>();
+    const deletionIds = new Map<Role, string>();
+    for (const actor of actors.filter(({ role }) => role !== "VIEWER")) {
+      const input = { name: `E2E Delete ${actor.role} ${suffix}`, domain: `delete-${actor.role.toLowerCase()}-${suffix}.example` };
+      deletionInputs.set(actor.role, input);
+      const response = await actor.page.request.post("/api/prospects", {
+        data: {
+          providerName: "CSV import",
+          ...input,
+          industry: "Roofing",
+          location: "Las Vegas NV",
+          retrievedAt: new Date().toISOString(),
+          provenance: { source: "E2E deletion matrix" },
+        },
+      });
+      expect(response.status()).toBe(201);
+      deletionIds.set(actor.role, (await response.json()).prospect.id as string);
+    }
+    await expectCode(await actors[3].page.request.delete(`/api/prospects/${deletionIds.get("ANALYST")}`), 403, "FORBIDDEN");
+    await expectCode(await actors[2].page.request.delete(`/api/prospects/${deletionIds.get("ANALYST")}`), 403, "FORBIDDEN");
+
+    const ownerDeletion = deletionInputs.get("OWNER")!;
+    await actors[0].page.goto("/prospects");
+    await actors[0].page.getByLabel("Search").fill(ownerDeletion.name);
+    await actors[0].page.getByRole("row").filter({ hasText: ownerDeletion.name }).click();
+    await actors[0].page.getByRole("button", { name: "Delete prospect" }).click();
+    await expect(actors[0].page.getByText("Delete and suppress this prospect?")).toBeVisible();
+    await actors[0].page.getByRole("button", { name: "Confirm deletion" }).click();
+    await expect(actors[0].page.getByRole("row").filter({ hasText: ownerDeletion.name })).toHaveCount(0);
+    await actors[0].page.goto("/find-businesses");
+    await actors[0].page.getByLabel("Upload CSV").setInputFiles({
+      name: "suppressed-prospect.csv",
+      mimeType: "text/csv",
+      buffer: Buffer.from(`company_name,domain,industry,location\n${ownerDeletion.name},${ownerDeletion.domain},Roofing,Las Vegas NV\n`),
+    });
+    await expect(actors[0].page.getByRole("status")).toContainText("1 suppressed");
+
+    const adminDelete = await actors[1].page.request.delete(`/api/prospects/${deletionIds.get("ADMIN")}`);
+    expect(adminDelete.status()).toBe(200);
+    await expect(adminDelete.json()).resolves.toMatchObject({ deleted: true, suppressed: true, prospectId: deletionIds.get("ADMIN") });
+    for (const role of ["OWNER", "ADMIN"] as const) {
+      const input = deletionInputs.get(role)!;
+      const response = await actors.find((actor) => actor.role === role)!.page.request.post("/api/prospects", {
+        data: { providerName: "CSV import", ...input, retrievedAt: new Date().toISOString(), provenance: { source: "E2E suppressed replay" } },
+      });
+      await expectCode(response, 409, "SUPPRESSED");
+    }
+
     const persisted = await db.prospectCompany.findMany({
       where: { organizationId: sharedOrganizationId, name: { startsWith: "E2E Role " } },
     });
@@ -170,6 +225,8 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
     const exportAudits = await db.auditLog.findMany({ where: { organizationId: sharedOrganizationId, action: "PROSPECTS_EXPORTED" } });
     expect(exportAudits).toHaveLength(2);
     expect(exportAudits.map(({ correlationId }) => correlationId).sort()).toEqual(["e2e-role-admin", "e2e-role-owner"]);
+    await expect(db.prospectSuppression.count({ where: { organizationId: sharedOrganizationId } })).resolves.toBe(2);
+    await expect(db.auditLog.count({ where: { organizationId: sharedOrganizationId, action: "PROSPECT_DELETED_AND_SUPPRESSED" } })).resolves.toBe(2);
   } finally {
     await Promise.all(actors.map(({ context }) => context.close()));
     const emails = actors.map(({ email }) => email);

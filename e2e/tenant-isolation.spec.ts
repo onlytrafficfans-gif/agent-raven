@@ -71,6 +71,9 @@ test("separate organizations cannot read or mutate each other's prospects", asyn
     });
     expect(forbiddenMutation.status()).toBe(404);
     await expect(forbiddenMutation.json()).resolves.toMatchObject({ error: { code: "NOT_FOUND" } });
+    const forbiddenDeletion = await secondPage.request.delete(`/api/prospects/${firstProspectId}`);
+    expect(forbiddenDeletion.status()).toBe(404);
+    await expect(forbiddenDeletion.json()).resolves.toMatchObject({ error: { code: "NOT_FOUND" } });
 
     await importProspect(secondPage, secondName, sharedDomain);
     const secondList = await secondPage.request.get(`/api/prospects?q=${encodeURIComponent(sharedDomain)}`);

@@ -59,19 +59,20 @@ enum ProviderAvailability {
 }
 
 model User {
-  id            String         @id @default(uuid()) @db.Uuid
+  id            String                @id @default(uuid()) @db.Uuid
   name          String
-  email         String         @unique
-  emailVerified Boolean        @default(false)
+  email         String                @unique
+  emailVerified Boolean               @default(false)
   image         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  createdAt     DateTime              @default(now())
+  updatedAt     DateTime              @updatedAt
   sessions      Session[]
   accounts      Account[]
   memberships   Membership[]
   searches      SearchRun[]
   notes         ProspectNote[]
-  auditEvents   AuditLog[]     @relation("AuditActor")
+  auditEvents   AuditLog[]            @relation("AuditActor")
+  suppressions  ProspectSuppression[]
 }
 
 model Session {
@@ -133,6 +134,7 @@ model Organization {
   usage         IntegrationUsage[]
   audits        AuditLog[]
   rateLimits    ApiRateLimitBucket[]
+  suppressions  ProspectSuppression[]
 }
 
 model ApiRateLimitBucket {
@@ -270,6 +272,23 @@ model ProspectTag {
   tag        Tag             @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([prospectId, tagId])
+}
+
+model ProspectSuppression {
+  id                     String       @id @default(uuid()) @db.Uuid
+  organizationId         String       @db.Uuid
+  normalizedDomain       String?
+  providerName           String?
+  providerOrganizationId String?
+  reason                 String       @db.VarChar(80)
+  createdByUserId        String       @db.Uuid
+  createdAt              DateTime     @default(now())
+  organization           Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  createdBy              User         @relation(fields: [createdByUserId], references: [id], onDelete: Restrict)
+
+  @@unique([organizationId, normalizedDomain])
+  @@unique([organizationId, providerName, providerOrganizationId])
+  @@index([organizationId, createdAt])
 }
 
 model IntegrationUsage {

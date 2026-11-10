@@ -49,3 +49,56 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     return jsonError(error, requestId);
   }
 }
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const requestId = correlationId(request);
+  try {
+    const ctx = await requireContext(["OWNER", "ADMIN"]);
+    await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "prospectDelete" });
+    const { id } = await params;
+    const existing = await db.prospectCompany.findFirst({
+      where: { id, organizationId: ctx.organizationId },
+      select: { id: true, source: true, providerName: true, providerOrganizationId: true, normalizedDomain: true },
+    });
+    if (!existing) return correlatedJson({ error: { code: "NOT_FOUND", message: "Prospect not found." } }, requestId, { status: 404 });
+
+    await db.$transaction(async (tx) => {
+      const deleted = await tx.prospectCompany.deleteMany({ where: { id, organizationId: ctx.organizationId } });
+      if (deleted.count !== 1) throw new ProspectDeletionConflict();
+      await tx.prospectSuppression.create({
+        data: {
+          organizationId: ctx.organizationId,
+          normalizedDomain: existing.normalizedDomain,
+          providerName: existing.providerOrganizationId ? existing.providerName : null,
+          providerOrganizationId: existing.providerOrganizationId,
+          reason: "PRIVACY_DELETION",
+          createdByUserId: ctx.userId,
+        },
+      });
+      await tx.auditLog.create({
+        data: {
+          organizationId: ctx.organizationId,
+          actorUserId: ctx.userId,
+          action: "PROSPECT_DELETED_AND_SUPPRESSED",
+          targetType: "ProspectCompany",
+          targetId: id,
+          correlationId: requestId,
+          metadata: {
+            source: existing.source,
+            domainSuppressed: Boolean(existing.normalizedDomain),
+            providerIdentitySuppressed: Boolean(existing.providerOrganizationId),
+          } as Prisma.InputJsonValue,
+        },
+      });
+      await tx.tag.deleteMany({ where: { organizationId: ctx.organizationId, prospects: { none: {} } } });
+    });
+    return correlatedJson({ deleted: true, suppressed: true, prospectId: id }, requestId);
+  } catch (error) {
+    if (error instanceof ProspectDeletionConflict) {
+      return correlatedJson({ error: { code: "DELETE_CONFLICT", message: "The prospect changed before deletion; reload and try again." } }, requestId, { status: 409 });
+    }
+    return jsonError(error, requestId);
+  }
+}
+
+class ProspectDeletionConflict extends Error {}

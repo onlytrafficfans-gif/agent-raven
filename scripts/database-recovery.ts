@@ -191,6 +191,7 @@ function databaseCounts(url: URL): Counts {
     "ProspectNote",
     "Tag",
     "ProspectTag",
+    "ProspectSuppression",
     "IntegrationUsage",
     "AuditLog",
     "ApiRateLimitBucket",

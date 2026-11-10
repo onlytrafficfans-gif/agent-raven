@@ -31,6 +31,9 @@ export const saveProspectSchema = z.object({
   estimatedRevenue: z.coerce.number().int().nonnegative().optional(),
   retrievedAt: z.coerce.date(),
   provenance: z.record(z.string(), z.unknown()),
+}).refine((value) => Boolean(value.providerOrganizationId || value.domain || value.websiteUrl), {
+  message: "A provider organization ID, domain, or website URL is required for durable identity.",
+  path: ["domain"],
 });
 
 export const prospectStatusSchema = z.enum(["NEW", "REVIEWING", "QUALIFIED", "REJECTED"]);
