@@ -1,4 +1,4 @@
-import { redact } from "@/lib/security";
+import { redact } from "@/lib/redaction";
 
 export function logEvent(level: "info" | "warn" | "error", event: string, fields: Record<string, unknown> = {}) {
   const line = JSON.stringify({ level, event, timestamp: new Date().toISOString(), ...redact(fields) as object });

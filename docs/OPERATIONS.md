@@ -5,7 +5,7 @@
 - `BETTER_AUTH_SECRET`: rotate through a controlled session invalidation window; expect existing sessions to expire.
 - `RESEND_API_KEY` and `AUTH_EMAIL_FROM`: provide transactional password-reset delivery. Verify the sender domain in Resend, keep the API key server-only, and rotate it in the provider before replacing the deployment secret. When either value is absent, the recovery UI fails visibly instead of claiming delivery.
 - `INTEGRATION_ENCRYPTION_KEY`: 32 random bytes encoded as base64. Credentials are AES-256-GCM envelopes tagged `v1`. To rotate, deploy code that can read the old and new key IDs, re-encrypt rows transactionally, verify connection health, then retire the old key. The current Phase 1 UI disconnect/reconnect flow is the safest manual rotation path.
-- Apollo credentials are returned by neither list nor mutation interfaces. Logs redact key/token/secret/password/credential fields.
+- Apollo credentials are returned by neither list nor mutation interfaces. Structured logs recursively redact key, token, secret, password, credential, authorization, cookie, and session fields.
 
 ## Authentication retention
 
@@ -19,13 +19,15 @@ Use `GET /api/health/live` only to determine whether the application process can
 
 Configure the hosting platform liveness check against `/api/health/live` and readiness/deployment verification against `/api/health`. Alert on any readiness HTTP 503, sustained `x-health-status: degraded`, or structured `health.database_degraded` log. Do not restart otherwise healthy application processes merely because a downstream database is temporarily unavailable.
 
+Next.js framework failures emit a structured `server.request_error` event containing only the error type, HTTP method, framework route template/type, render classification, and a safe framework digest when available. Unexpected errors caught by app-owned JSON routes emit `http.unhandled_error` with only the correlation ID and error type. Password-reset delivery failures emit `auth.password_reset_delivery_failed` without the recipient, reset URL, provider response, or error message. Request URLs, query strings, headers, request bodies, exception messages, and stack traces are deliberately excluded from these events. Configure the hosting log drain to alert on these error events and preserve the correlation ID from the client response when investigating.
+
 ## Database recovery
 
 Use managed PostgreSQL point-in-time recovery with daily backups. Quarterly, restore the latest backup into an isolated database, verify migrations and critical table counts, then destroy the isolated copy. Credential ciphertext is useful only with the separately protected encryption key; back up and rotate that key using the hosting provider's secret manager.
 
 Run `npm run db:backup` for a private custom-format dump and SHA-256 checksum. Run `npm run db:restore-drill` to create a new backup, restore it into a randomly named isolated database, compare all authentication, organization, integration, search, prospect, audit, and Prisma migration table counts, run `prisma migrate status`, and force-remove the isolated database. Dumps, checksums, and JSON drill reports are mode `0600` under the ignored `.recovery/` directory. Set `PG_BIN` if PostgreSQL client tools are outside the known system or bundled paths. Non-local operations fail closed unless `ALLOW_REMOTE_RECOVERY_OPERATION=true` is deliberately supplied.
 
-Latest measured local drill on November 10, 2026 at 6:05 AM Pacific: **PASS**. PostgreSQL 16 restored 18 critical tables, including `ApiRateLimitBucket` and `ProspectSuppression`, with exact row-count parity; four migrations were current; the isolated database was removed; and the full drill completed in 8.7 seconds. This proves the workflow locally; production RPO/RTO still depend on the selected managed PostgreSQL backup service and a production restore exercise.
+Latest measured local drill on November 11, 2026 at 6:00 AM Pacific: **PASS**. PostgreSQL 16 restored 18 critical tables, including `ApiRateLimitBucket` and `ProspectSuppression`, with exact row-count parity; four migrations were current; the isolated database was removed; and the full drill completed in 12.7 seconds. This proves the workflow locally; production RPO/RTO still depend on the selected managed PostgreSQL backup service and a production restore exercise.
 
 Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The local drill is below the RTO target, while the production RPO and RTO remain operating targets until measured against the deployed managed database.
 

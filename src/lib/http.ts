@@ -1,6 +1,8 @@
 import { ProviderError } from "@/lib/provider-errors";
 import { AuthorizationError } from "@/lib/authorization";
 import { RateLimitError } from "@/lib/rate-limit";
+import { logEvent } from "@/lib/logger";
+import { errorType } from "@/lib/observability";
 import { ZodError } from "zod";
 
 export function correlatedJson(body: Record<string, unknown>, correlationId: string, init: ResponseInit = {}): Response {
@@ -39,5 +41,6 @@ export function jsonError(error: unknown, correlationId?: string): Response {
       { status, ...(error.code === "RATE_LIMITED" && error.retryAfter ? { headers: { "Retry-After": String(error.retryAfter) } } : {}) },
     );
   }
+  logEvent("error", "http.unhandled_error", { correlationId: requestId, errorType: errorType(error) });
   return correlatedJson({ error: { code: "INTERNAL_ERROR", message: "The request could not be completed." } }, requestId, { status: 500 });
 }

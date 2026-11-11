@@ -5,6 +5,8 @@ import { isPasswordResetEmailConfigured, sendPasswordResetEmail } from "@/lib/em
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { after } from "next/server";
+import { logEvent } from "@/lib/logger";
+import { errorType } from "@/lib/observability";
 
 export const auth = betterAuth({
   appName: "Agent.Raven",
@@ -21,8 +23,8 @@ export const auth = betterAuth({
       after(async () => {
         try {
           await sendPasswordResetEmail({ to: user.email, name: user.name, resetUrl: url });
-        } catch {
-          console.error("Password reset email delivery failed.");
+        } catch (error) {
+          logEvent("error", "auth.password_reset_delivery_failed", { errorType: errorType(error) });
         }
       });
     },
