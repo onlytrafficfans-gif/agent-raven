@@ -69,7 +69,7 @@ The Settings page exposes organization-scoped operating evidence only to Owner a
 
 ## Continuous verification
 
-`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It provisions an isolated PostgreSQL 16 service, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, validates the production environment contract, and runs the complete desktop/mobile browser suite. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
+`.github/workflows/ci.yml` runs on every pull request and every push to `main`. It uses the explicitly pinned Ubuntu 24.04 runner, provisions an isolated PostgreSQL 16 service, installs the matching Playwright Chromium runtime, applies migrations, seeds a CI-only owner, runs typecheck, lint, unit tests, a production build, validates the production environment contract, and runs the complete desktop/mobile browser suite. Pinning the runner prevents GitHub's `ubuntu-latest` alias from silently moving the release gate onto an unverified operating-system image. CI values are non-production test credentials; deployment secrets remain configured only in the hosting provider. Failed browser runs retain Playwright diagnostics for seven days.
 
 ## Deployment preflight
 

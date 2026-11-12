@@ -24,8 +24,10 @@ env:
 jobs:
   verify:
     name: Typecheck, lint, unit, build, and browser tests
-    runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # Pin the runner so Playwright system dependencies do not drift when
+    # GitHub changes the ubuntu-latest image underneath a verified release.
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
 
     services:
       postgres:
