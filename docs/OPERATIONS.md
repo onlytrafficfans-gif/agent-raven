@@ -37,7 +37,7 @@ Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The 
 - Invalid key: mark connection invalid, rotate in Apollo, reconnect, and inspect the credential audit event.
 - Permission failure: add only the required Apollo scopes; do not broaden to a master key without review.
 - Rate limit: honor `Retry-After`; inspect the organization and bucket key before changing policy. The app does not retry paid calls automatically.
-- Budget block: validate recorded usage and obtain explicit approval before changing `APOLLO_MONTHLY_OPERATION_LIMIT`.
+- Budget block: validate recorded usage, including failed or interrupted reserved attempts, and obtain explicit approval before changing `APOLLO_MONTHLY_OPERATION_LIMIT`.
 - Provider outage: keep CSV fallback available; do not represent fixture or CSV records as live Apollo data.
 - Suspected leakage: revoke the Apollo key, rotate application secrets, inspect structured logs/artifacts, and notify affected operators.
 
@@ -51,6 +51,8 @@ Prospect creation is race-safe at the database boundary. Organization-scoped uni
 
 API abuse controls use PostgreSQL fixed-window buckets rather than process memory, so every application instance observes the same counters. Paid Apollo search/detail traffic is capped at 10 attempts per organization per minute; credential tests at 5 per organization per 10 minutes; disconnects at 20 per organization per minute; CSV imports at 10 per user per minute; prospect creates at 60 per user per minute; prospect updates at 120 per user per minute; and privacy deletions at 20 per user per 10 minutes. HTTP 429 responses carry the same positive delay in `Retry-After` and the correlated JSON error. New buckets opportunistically delete rows older than 24 hours, and organization deletion cascades to its buckets.
 
+The monthly Apollo operation limit is reserved before each paid provider call. A PostgreSQL transaction takes an organization-and-UTC-month advisory lock, rechecks recorded usage, and creates one `RESERVED` usage row before releasing the lock. This serializes concurrent application instances so they cannot all spend the same remaining allowance. Successful calls change the row to `SUCCEEDED`; provider failures record only their sanitized error category. Failed and interrupted attempts remain counted deliberately because the application cannot prove the provider did not charge them. Investigate stale `RESERVED` rows by correlation ID before any controlled reconciliation; never delete or reduce usage merely to bypass the limit. This guard is an internal operation ceiling, not a replacement for Apollo's billing record.
+
 Owner and Admin prospect exports are capped at 5 requests per user per 10 minutes and 5,000 records per file. The export reads one repeatable PostgreSQL snapshot, remains tenant-scoped, includes saved tags and notes, omits integration credentials and raw provenance, neutralizes spreadsheet formulas, and records an aggregate `PROSPECTS_EXPORTED` audit event. Treat exported files as confidential customer data: store them only in an approved encrypted location and delete them according to the agency's retention policy.
 
 Owner/Admin privacy deletion requires an explicit in-product confirmation. It transactionally removes the prospect, notes, and tag links, stores organization-scoped domain/provider suppression identities, cleans newly orphaned tags, and preserves a sanitized audit event after the prospect relation is removed. Direct saves and CSV imports both honor the suppression table. Reversing a suppression is intentionally not a routine browser action; require a documented privacy/legal review and a controlled database operation so deleted data cannot be casually reintroduced.
@@ -61,7 +63,7 @@ All routes receive a same-origin Content Security Policy, clickjacking denial th
 
 ## Costs and limits
 
-Apollo currently documents organization search as one credit per page (up to 100 results), while organization detail/enrichment can consume one credit per organization. The app enforces both a 10-per-minute organization throttle and its monthly operation limit before provider calls; Apollo's plan, credit balance, scopes, and per-endpoint rate limits remain the external source of truth. PostgreSQL and Vercel costs depend on the selected plans and traffic.
+Apollo currently documents organization search as one credit per page (up to 100 results), while organization detail/enrichment can consume one credit per organization. The app enforces both a 10-per-minute organization throttle and its atomically reserved monthly operation limit before provider calls; Apollo's plan, credit balance, scopes, and per-endpoint rate limits remain the external source of truth. PostgreSQL and Vercel costs depend on the selected plans and traffic.
 
 ## Operator evidence
 

@@ -22,7 +22,7 @@ Use `/api/health/live` for process liveness and `/api/health` for database-backe
 
 Unexpected server failures produce structured, sanitized error events for the hosting log drain. They include safe route/error classification only and exclude request URLs, query strings, headers, bodies, exception messages, stack traces, reset recipients, and secret-bearing fields.
 
-Owner and Admin users can inspect real organization-scoped Apollo usage and sanitized audit actions in Settings. The view reads PostgreSQL directly, uses a UTC calendar-month window, and never exposes credentials, audit metadata, or provider response content. Analyst and Viewer roles cannot access this operational evidence.
+Owner and Admin users can inspect real organization-scoped Apollo usage and sanitized audit actions in Settings. Paid search/detail operations reserve their monthly allowance atomically in PostgreSQL before contacting Apollo, so concurrent requests cannot spend the same remaining capacity. The view uses a UTC calendar-month window and never exposes credentials, audit metadata, or provider response content. Analyst and Viewer roles cannot access this operational evidence.
 
 The suite defaults to port 3000. If that port is already occupied, run it with an isolated port such as `E2E_PORT=3100 npm run test:e2e`; the test server automatically uses the matching Better Auth origin.
 

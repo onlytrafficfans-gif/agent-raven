@@ -1,6 +1,6 @@
 import { AuthorizationError, requireContext } from "@/lib/authorization";
 import { ApolloClient } from "@/lib/apollo";
-import { decideBudget } from "@/lib/budget";
+import { runBudgetedApolloOperation } from "@/lib/budget";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
@@ -22,47 +22,33 @@ export async function POST(request: Request) {
       throw new ProviderError("INVALID_CREDENTIAL", "Connect and test Apollo before searching.");
     }
 
-    const start = new Date();
-    start.setUTCDate(1);
-    start.setUTCHours(0, 0, 0, 0);
-    const used = await db.integrationUsage.aggregate({
-      _sum: { usageUnits: true },
-      where: { organizationId: ctx.organizationId, provider: "APOLLO", createdAt: { gte: start } },
-    });
-    const decision = decideBudget(used._sum.usageUnits ?? 0, 1, Number(process.env.APOLLO_MONTHLY_OPERATION_LIMIT ?? 100));
-    if (!decision.allowed) throw new ProviderError("BUDGET_BLOCKED", decision.reason);
-
     const query = await db.searchQuery.create({
       data: { organizationId: ctx.organizationId, provider: "APOLLO", filters: input },
     });
     try {
-      const result = await new ApolloClient(decryptCredential(connection.encryptedCredential)).search(input);
-      await db.$transaction([
-        db.searchRun.create({
-          data: {
-            organizationId: ctx.organizationId,
-            searchQueryId: query.id,
-            runByUserId: ctx.userId,
-            provider: "APOLLO",
-            page: result.page,
-            perPage: result.perPage,
-            outcome: result.companies.length ? "SUCCEEDED" : "EMPTY",
-            resultCount: result.companies.length,
-            usageUnits: result.usageUnits,
-            correlationId: requestId,
-          },
-        }),
-        db.integrationUsage.create({
-          data: {
-            organizationId: ctx.organizationId,
-            provider: "APOLLO",
-            operation: "ORGANIZATION_SEARCH",
-            outcome: "SUCCEEDED",
-            usageUnits: result.usageUnits,
-            correlationId: requestId,
-          },
-        }),
-      ]);
+      const result = await runBudgetedApolloOperation(
+        {
+          organizationId: ctx.organizationId,
+          operation: "ORGANIZATION_SEARCH",
+          correlationId: requestId,
+          limit: Number(process.env.APOLLO_MONTHLY_OPERATION_LIMIT ?? 100),
+        },
+        () => new ApolloClient(decryptCredential(connection.encryptedCredential!)).search(input),
+      );
+      await db.searchRun.create({
+        data: {
+          organizationId: ctx.organizationId,
+          searchQueryId: query.id,
+          runByUserId: ctx.userId,
+          provider: "APOLLO",
+          page: result.page,
+          perPage: result.perPage,
+          outcome: result.companies.length ? "SUCCEEDED" : "EMPTY",
+          resultCount: result.companies.length,
+          usageUnits: result.usageUnits,
+          correlationId: requestId,
+        },
+      });
       return correlatedJson({ ...result }, requestId);
     } catch (error) {
       if (error instanceof ProviderError) {

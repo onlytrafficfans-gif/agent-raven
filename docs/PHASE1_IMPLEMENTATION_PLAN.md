@@ -7,7 +7,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 1. Better Auth email/password session establishes an authenticated user.
 2. Every app/server boundary resolves organization membership and role.
 3. An owner/admin stores an Apollo API key encrypted with AES-256-GCM; the plaintext value is never returned.
-4. The server checks the organization budget, calls Apollo organization search, normalizes an honest provider response, and records the search run and usage.
+4. The server atomically reserves organization budget in PostgreSQL before calling Apollo organization search, normalizes an honest provider response, and records the search run and final usage outcome.
 5. A user opens company detail and idempotently saves a company to the organization-scoped CRM.
 6. PostgreSQL constraints prevent concurrent duplicates by Apollo organization ID or normalized domain.
 7. Prospects remain searchable, filterable, sortable, editable, and auditable after reload/restart.
@@ -19,7 +19,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 | Authentication / server RBAC | `src/lib/auth.ts`, `src/lib/authorization.ts`, protected dashboard layout and route handlers | unit + route negative tests; Playwright redirect |
 | Tenant-scoped database | `prisma/schema.prisma`, initial SQL migration | migration deploy and integration suite against PostgreSQL |
 | Apollo connection | `src/lib/apollo.ts`, encrypted `IntegrationConnection`, `/api/integrations/apollo` | adapter contract tests; redacted live test when authorized |
-| Search / history / budget | `/api/search`, search UI, `SearchQuery`, `SearchRun`, `IntegrationUsage` | validation, budget and error mapping tests; disconnected real-runtime browser state |
+| Search / history / budget | `/api/search`, search UI, `SearchQuery`, `SearchRun`, `IntegrationUsage`, transaction-scoped monthly advisory lock | validation, budget/error mapping tests, 12-request database concurrency test; disconnected real-runtime browser state |
 | Company detail / save | `/api/companies/[providerId]`, `/api/prospects` | normalization and idempotency tests; DB concurrency test |
 | Prospect CRM | `/prospects`, `/api/prospects/[id]`, notes/tags/status audit | integration + Playwright reload/filter/edit |
 | Prospect portability | `/api/prospects/export`, restricted CSV control, export audit event | formula-safety unit test + role and persistence browser matrix |
