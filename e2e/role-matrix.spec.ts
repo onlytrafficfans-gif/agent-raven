@@ -140,17 +140,43 @@ test("Owner, Admin, Analyst, and Viewer permissions are enforced at API boundari
     await expect(actors[3].page.getByText("Viewer access is read-only.")).toBeVisible();
     await expect(actors[3].page.getByLabel("Status", { exact: true }).last()).toBeDisabled();
 
+    if (!sharedOrganizationId) throw new Error("Shared organization was not provisioned.");
+    await db.integrationUsage.createMany({
+      data: [
+        {
+          organizationId: sharedOrganizationId,
+          provider: "APOLLO",
+          operation: "ORGANIZATION_SEARCH",
+          outcome: "SUCCEEDED",
+          usageUnits: 1,
+          correlationId: `e2e-provider-success-${suffix}`,
+        },
+        {
+          organizationId: sharedOrganizationId,
+          provider: "APOLLO",
+          operation: "ORGANIZATION_DETAIL",
+          outcome: "RESERVED",
+          usageUnits: 1,
+          correlationId: `e2e-provider-reserved-${suffix}`,
+        },
+      ],
+    });
+
     for (const actor of actors) {
       await actor.page.goto("/settings");
       await expect(actor.page.getByRole("heading", { name: "Operations evidence" })).toBeVisible();
       if (actor.role === "OWNER" || actor.role === "ADMIN") {
         await expect(actor.page.getByText("Live organization-scoped PostgreSQL state.")).toBeVisible();
         await expect(actor.page.getByRole("heading", { name: "Recent audit activity" })).toBeVisible();
+        await expect(actor.page.getByRole("heading", { name: "Recent provider usage" })).toBeVisible();
         await expect(actor.page.getByText("PROSPECTS EXPORTED").first()).toBeVisible();
         await expect(actor.page.getByText(`e2e-role-${actor.role.toLowerCase()}`).first()).toBeVisible();
+        await expect(actor.page.getByText(`e2e-provider-success-${suffix}`)).toBeVisible();
+        await expect(actor.page.getByText(`e2e-provider-reserved-${suffix}`)).toBeVisible();
       } else {
         await expect(actor.page.getByText("Owner or Admin access required")).toBeVisible();
         await expect(actor.page.getByRole("heading", { name: "Recent audit activity" })).toHaveCount(0);
+        await expect(actor.page.getByRole("heading", { name: "Recent provider usage" })).toHaveCount(0);
       }
     }
 

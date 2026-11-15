@@ -37,13 +37,17 @@ export default async function SettingsPage() {
         <div className="panel-head"><div><h2 id="audit-heading">Recent audit activity</h2><p>The latest 25 material Phase 1 actions. Secret values and event metadata are not displayed.</p></div></div>
         {snapshot.audits.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Time</th><th>Action</th><th>Actor</th><th>Target</th><th>Request ID</th></tr></thead><tbody>{snapshot.audits.map((event) => <tr key={event.id}><td>{event.createdAt.toLocaleString()}</td><td><span className="badge">{event.action.replaceAll("_", " ")}</span></td><td>{event.actor?.name ?? "System"}</td><td>{event.targetType}</td><td className="mono-cell">{event.correlationId}</td></tr>)}</tbody></table></div> : <div className="empty"><strong>No audit activity yet</strong>Material Phase 1 actions will appear here after they occur.</div>}
       </section>
+      <section className="panel section-space" aria-labelledby="provider-usage-heading">
+        <div className="panel-head"><div><h2 id="provider-usage-heading">Recent provider usage</h2><p>The latest 25 Apollo attempts in the current UTC month, including reserved and failed operations.</p></div></div>
+        {snapshot.usageEvents.length ? <div className="table-wrap"><table className="data-table"><thead><tr><th>Time</th><th>Operation</th><th>Outcome</th><th>Units</th><th>Request ID</th></tr></thead><tbody>{snapshot.usageEvents.map((event) => <tr key={event.id}><td>{event.createdAt.toLocaleString()}</td><td>{event.operation.replaceAll("_", " ")}</td><td><span className="badge">{event.outcome.replaceAll("_", " ")}</span></td><td>{event.usageUnits}</td><td className="mono-cell">{event.correlationId}</td></tr>)}</tbody></table></div> : <div className="empty"><strong>No provider usage this month</strong>Authorized Apollo attempts will appear here after budget is reserved.</div>}
+      </section>
     </> : <section className="panel section-space"><div className="panel-head"><div><h2>Operations evidence</h2><p>Restricted operational records.</p></div></div><div className="empty"><strong>Owner or Admin access required</strong>Provider usage and audit activity are restricted to organization operators.</div></section>}
   </>;
 }
 
 async function loadOperationsSnapshot(organizationId: string) {
   const windowStart = monthlyUsageWindowStart();
-  const [connection, usage, prospectCount, auditCount, audits] = await db.$transaction([
+  const [connection, usage, prospectCount, auditCount, audits, usageEvents] = await db.$transaction([
     db.integrationConnection.findUnique({
       where: { organizationId_provider: { organizationId, provider: "APOLLO" } },
       select: { state: true, lastTestedAt: true },
@@ -61,6 +65,12 @@ async function loadOperationsSnapshot(organizationId: string) {
       orderBy: [{ createdAt: "desc" }, { id: "desc" }],
       take: 25,
     }),
+    db.integrationUsage.findMany({
+      where: { organizationId, provider: "APOLLO", createdAt: { gte: windowStart } },
+      select: { id: true, operation: true, outcome: true, usageUnits: true, correlationId: true, createdAt: true },
+      orderBy: [{ createdAt: "desc" }, { id: "desc" }],
+      take: 25,
+    }),
   ], { isolationLevel: Prisma.TransactionIsolationLevel.RepeatableRead });
   return {
     integrationState: connection?.state.replaceAll("_", " ") ?? "NOT CONFIGURED",
@@ -70,6 +80,7 @@ async function loadOperationsSnapshot(organizationId: string) {
     prospectCount,
     auditCount,
     audits,
+    usageEvents,
     windowStart,
   };
 }
