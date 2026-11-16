@@ -17,6 +17,8 @@ env:
   BETTER_AUTH_URL: http://127.0.0.1:3000
   BETTER_AUTH_SECRET: ci-only-better-auth-secret-at-least-32-characters
   INTEGRATION_ENCRYPTION_KEY: Y2ktb25seS1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+  INTEGRATION_ENCRYPTION_KEY_ID: ci-v1
+  INTEGRATION_ENCRYPTION_PREVIOUS_KEYS: "{}"
   APOLLO_MONTHLY_OPERATION_LIMIT: "100"
   SEED_OWNER_EMAIL: ci-owner@example.test
   SEED_OWNER_PASSWORD: ci-only-owner-password-strong-2026
@@ -78,6 +80,9 @@ jobs:
       - name: Validate authentication retention maintenance
         run: npm run auth:cleanup
 
+      - name: Validate integration credential rotation maintenance
+        run: npm run credentials:rotate
+
       - name: Production build
         run: npm run build
 
@@ -87,6 +92,8 @@ jobs:
           BETTER_AUTH_URL: https://agent-raven.ci.invalid
           BETTER_AUTH_SECRET: ci-only-better-auth-secret-at-least-32-characters
           INTEGRATION_ENCRYPTION_KEY: Y2ktb25seS1rZXktMzItYnl0ZXMtbG9uZyEhISEhISE=
+          INTEGRATION_ENCRYPTION_KEY_ID: ci-v1
+          INTEGRATION_ENCRYPTION_PREVIOUS_KEYS: "{}"
           RESEND_API_KEY: re_ci_contract_value
           AUTH_EMAIL_FROM: Agent.Raven <auth@ci.invalid>
           APOLLO_MONTHLY_OPERATION_LIMIT: "100"
