@@ -11,6 +11,7 @@ Use this checklist for every production release. Keep the command output and dep
 - Confirm managed PostgreSQL backups and point-in-time recovery are enabled. Record the latest successful restore drill and verify the migration is backward compatible with the rollback target.
 - Confirm `/api/health/live` is the process liveness probe and `/api/health` is the traffic readiness probe.
 - Confirm the daily `npm run auth:cleanup:execute` job is scheduled in durable infrastructure.
+- Run `npm run credentials:rotate` and require zero unreadable credentials. During an active rotation, confirm every required prior key remains available until transactional re-encryption and provider-health verification complete.
 - Keep Apollo disconnected unless the credential, account authority, operation budget, and credit-consuming acceptance calls have been explicitly approved.
 
 ## Deployment

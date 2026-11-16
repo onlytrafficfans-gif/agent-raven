@@ -18,7 +18,7 @@ export function checkProductionEnvironment(env: DeploymentEnvironment): Deployme
   const errors: string[] = [];
   const database = validPostgresUrl(env.DATABASE_URL, errors);
   const authentication = validAuthentication(env, errors);
-  const credentialEncryption = validEncryptionKey(env.INTEGRATION_ENCRYPTION_KEY, errors);
+  const credentialEncryption = validEncryptionConfiguration(env, errors);
   const passwordEmail = validPasswordEmail(env, errors);
   const apolloBudget = validApolloBudget(env.APOLLO_MONTHLY_OPERATION_LIMIT, errors);
 
@@ -85,14 +85,49 @@ function validAuthentication(env: DeploymentEnvironment, errors: string[]): bool
   return valid;
 }
 
-function validEncryptionKey(value: string | undefined, errors: string[]): boolean {
+function validEncryptionConfiguration(env: DeploymentEnvironment, errors: string[]): boolean {
+  let valid = validEncryptionKey(env.INTEGRATION_ENCRYPTION_KEY, "INTEGRATION_ENCRYPTION_KEY", errors);
+  const currentKeyId = env.INTEGRATION_ENCRYPTION_KEY_ID?.trim() || "v1";
+  if (!validEncryptionKeyId(currentKeyId)) {
+    errors.push("INTEGRATION_ENCRYPTION_KEY_ID must use 1-64 letters, numbers, dots, underscores, or hyphens.");
+    valid = false;
+  }
+  const previousRaw = env.INTEGRATION_ENCRYPTION_PREVIOUS_KEYS?.trim();
+  if (!previousRaw) return valid;
+  let previous: unknown;
+  try {
+    previous = JSON.parse(previousRaw);
+  } catch {
+    errors.push("INTEGRATION_ENCRYPTION_PREVIOUS_KEYS must be a JSON object of key IDs to base64 keys.");
+    return false;
+  }
+  if (!previous || Array.isArray(previous) || typeof previous !== "object") {
+    errors.push("INTEGRATION_ENCRYPTION_PREVIOUS_KEYS must be a JSON object of key IDs to base64 keys.");
+    return false;
+  }
+  for (const [keyId, key] of Object.entries(previous)) {
+    if (!validEncryptionKeyId(keyId) || keyId === currentKeyId || typeof key !== "string") {
+      errors.push("INTEGRATION_ENCRYPTION_PREVIOUS_KEYS contains an invalid or duplicate key ID.");
+      valid = false;
+      continue;
+    }
+    if (!validEncryptionKey(key, "A previous integration encryption key", errors)) valid = false;
+  }
+  return valid;
+}
+
+function validEncryptionKeyId(value: string): boolean {
+  return /^[A-Za-z0-9._-]{1,64}$/.test(value);
+}
+
+function validEncryptionKey(value: string | undefined, label: string, errors: string[]): boolean {
   if (!value || placeholderPattern.test(value)) {
-    errors.push("INTEGRATION_ENCRYPTION_KEY must be a non-placeholder base64 value.");
+    errors.push(`${label} must be a non-placeholder base64 value.`);
     return false;
   }
   const decoded = Buffer.from(value, "base64");
   if (decoded.length !== 32 || decoded.toString("base64") !== value) {
-    errors.push("INTEGRATION_ENCRYPTION_KEY must be canonical base64 encoding exactly 32 bytes.");
+    errors.push(`${label} must be canonical base64 encoding exactly 32 bytes.`);
     return false;
   }
   return true;

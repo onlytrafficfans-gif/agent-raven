@@ -6,6 +6,8 @@ const validEnvironment = {
   BETTER_AUTH_SECRET: "production-auth-secret-with-more-than-32-characters",
   BETTER_AUTH_URL: "https://raven.acme.invalid",
   INTEGRATION_ENCRYPTION_KEY: Buffer.from("0123456789abcdef0123456789abcdef").toString("base64"),
+  INTEGRATION_ENCRYPTION_KEY_ID: "primary-2026-11",
+  INTEGRATION_ENCRYPTION_PREVIOUS_KEYS: JSON.stringify({ "primary-2026-10": Buffer.from("abcdef0123456789abcdef0123456789").toString("base64") }),
   RESEND_API_KEY: "re_production_configured_value",
   AUTH_EMAIL_FROM: "Agent.Raven <auth@acme.invalid>",
   APOLLO_MONTHLY_OPERATION_LIMIT: "100",
@@ -40,6 +42,8 @@ describe("production deployment environment", () => {
       DATABASE_URL: "mysql://user:secret@database.internal/app",
       BETTER_AUTH_URL: "http://raven.acme.invalid/path",
       INTEGRATION_ENCRYPTION_KEY: "not-a-32-byte-key",
+      INTEGRATION_ENCRYPTION_KEY_ID: "invalid key id",
+      INTEGRATION_ENCRYPTION_PREVIOUS_KEYS: "not-json",
       AUTH_EMAIL_FROM: "Agent.Raven <auth@example.com>",
       APOLLO_MONTHLY_OPERATION_LIMIT: "0",
     });

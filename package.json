@@ -20,6 +20,8 @@
     "db:restore-drill": "tsx scripts/database-recovery.ts drill",
     "auth:cleanup": "tsx scripts/cleanup-expired-auth.ts",
     "auth:cleanup:execute": "tsx scripts/cleanup-expired-auth.ts --execute",
+    "credentials:rotate": "tsx scripts/rotate-integration-credentials.ts",
+    "credentials:rotate:execute": "tsx scripts/rotate-integration-credentials.ts --execute",
     "deploy:check": "tsx scripts/check-production-env.ts",
     "deploy:verify": "tsx scripts/verify-deployment.ts"
   },

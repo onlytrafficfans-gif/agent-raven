@@ -27,7 +27,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ prov
         correlationId: requestId,
         limit: Number(process.env.APOLLO_MONTHLY_OPERATION_LIMIT ?? 100),
       },
-      () => new ApolloClient(decryptCredential(connection.encryptedCredential!)).company(providerId),
+      () => new ApolloClient(decryptCredential(connection.encryptedCredential!, connection.credentialKeyId ?? undefined)).company(providerId),
     );
     return correlatedJson({ company }, requestId);
   } catch (error) {

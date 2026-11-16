@@ -18,6 +18,8 @@ The browser suite uses real authentication, account registration, workspace prov
 
 Run `npm run auth:cleanup` for a read-only count of expired sessions and password-reset verifications. Run `npm run auth:cleanup:execute` from a trusted maintenance environment to delete only records expired at the command cutoff. Schedule the execute command daily after production database access is configured; it never prints tokens, email addresses, or session identifiers.
 
+Run `npm run credentials:rotate` before a credential-encryption key change to verify every stored integration credential is readable under the configured current/previous key ring. After deploying the new current key ID with the old key retained in `INTEGRATION_ENCRYPTION_PREVIOUS_KEYS`, run `npm run credentials:rotate:execute` from a trusted maintenance environment. It transactionally re-encrypts provider credentials, records sanitized audit evidence, and never prints credential values. See [operations](docs/OPERATIONS.md) for the required rollout order.
+
 Use `/api/health/live` for process liveness and `/api/health` for database-backed readiness. The readiness response is public but sanitized, reports rounded PostgreSQL latency, and returns HTTP 503 only when the database query fails.
 
 Unexpected server failures produce structured, sanitized error events for the hosting log drain. They include safe route/error classification only and exclude request URLs, query strings, headers, bodies, exception messages, stack traces, reset recipients, and secret-bearing fields.

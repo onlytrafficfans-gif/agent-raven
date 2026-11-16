@@ -33,7 +33,7 @@ export async function POST(request: Request) {
           correlationId: requestId,
           limit: Number(process.env.APOLLO_MONTHLY_OPERATION_LIMIT ?? 100),
         },
-        () => new ApolloClient(decryptCredential(connection.encryptedCredential!)).search(input),
+        () => new ApolloClient(decryptCredential(connection.encryptedCredential!, connection.credentialKeyId ?? undefined)).search(input),
       );
       await db.searchRun.create({
         data: {

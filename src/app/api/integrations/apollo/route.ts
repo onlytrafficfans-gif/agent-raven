@@ -5,7 +5,7 @@ import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { integrationCredentialSchema } from "@/lib/schemas";
-import { encryptCredential } from "@/lib/security";
+import { currentEncryptionKeyId, encryptCredential } from "@/lib/security";
 
 export async function POST(request: Request) {
   const requestId = correlationId(request);
@@ -15,12 +15,13 @@ export async function POST(request: Request) {
     const { apiKey } = integrationCredentialSchema.parse(await request.json());
     await new ApolloClient(apiKey).testConnection();
     const encryptedCredential = encryptCredential(apiKey);
+    const credentialKeyId = currentEncryptionKeyId();
     const testedAt = new Date();
     await db.$transaction([
       db.integrationConnection.upsert({
         where: { organizationId_provider: { organizationId: ctx.organizationId, provider: "APOLLO" } },
-        create: { organizationId: ctx.organizationId, provider: "APOLLO", state: "CONNECTED", encryptedCredential, credentialKeyId: "v1", lastTestedAt: testedAt, sanitizedDiagnostic: "Credential validated through Apollo auth health." },
-        update: { state: "CONNECTED", encryptedCredential, credentialKeyId: "v1", lastTestedAt: testedAt, sanitizedDiagnostic: "Credential validated through Apollo auth health." },
+        create: { organizationId: ctx.organizationId, provider: "APOLLO", state: "CONNECTED", encryptedCredential, credentialKeyId, lastTestedAt: testedAt, sanitizedDiagnostic: "Credential validated through Apollo auth health." },
+        update: { state: "CONNECTED", encryptedCredential, credentialKeyId, lastTestedAt: testedAt, sanitizedDiagnostic: "Credential validated through Apollo auth health." },
       }),
       db.auditLog.create({
         data: { organizationId: ctx.organizationId, actorUserId: ctx.userId, action: "INTEGRATION_CONNECTED", targetType: "IntegrationConnection", correlationId: requestId, metadata: { provider: "APOLLO" } },
