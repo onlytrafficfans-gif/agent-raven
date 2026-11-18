@@ -1,7 +1,8 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { jsonError } from "@/lib/http";
 import { logEvent } from "@/lib/logger";
-import { frameworkErrorFields } from "@/lib/observability";
+import { frameworkErrorFields, providerFailureFields } from "@/lib/observability";
+import { ProviderError } from "@/lib/provider-errors";
 
 afterEach(() => vi.restoreAllMocks());
 
@@ -53,5 +54,11 @@ describe("sanitized production observability", () => {
     expect(line).toContain('"errorType":"Error"');
     expect(line).toContain('"correlationId":"safe-correlation-id"');
     expect(line).not.toContain("do-not-log");
+  });
+
+  it("classifies provider failures without retaining exception messages", () => {
+    const fields = providerFailureFields(new ProviderError("INVALID_CREDENTIAL", "api_key=do-not-log"), "safe-provider-id");
+    expect(fields).toEqual({ correlationId: "safe-provider-id", errorType: "Error", providerCode: "INVALID_CREDENTIAL" });
+    expect(JSON.stringify(fields)).not.toContain("do-not-log");
   });
 });

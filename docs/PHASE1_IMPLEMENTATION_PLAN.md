@@ -2,6 +2,8 @@
 
 Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases are navigation-only, disabled, and labelled `Planned`.
 
+Current release priority: **upgrade Next.js 16.4.2 to a patched release and rerun the full release gate**. The installed version is affected by GHSA-mfr8-8qww-v76h, and Next.js now stops the first production build with a security upgrade requirement. Provider telemetry hardening is implemented and locally verified but remains unpublished until that release blocker is resolved.
+
 ## Vertical slice
 
 1. Better Auth email/password session establishes an authenticated user.
@@ -25,7 +27,7 @@ Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases ar
 | Prospect portability | `/api/prospects/export`, restricted CSV control, export audit event | formula-safety unit test + role and persistence browser matrix |
 | Privacy deletion and suppression | `ProspectSuppression`, confirmed Owner/Admin delete, replay checks across API and CSV | migration + role/tenant browser matrix + isolated restore drill |
 | CSV fallback | `/api/import/csv`, CSV template and row-level validation | parser/normalization/dedup tests |
-| Security / health / logging | Key-ID-aware AES-GCM encryption and audited transactional rotation, recursive secret redaction, correlation IDs, sanitized framework/API error events, `/api/health`, audit records | encryption/rotation integration tests, secret scan, observability unit tests, endpoint inspection |
+| Security / health / logging | Key-ID-aware AES-GCM encryption and audited transactional rotation, recursive secret redaction, correlation IDs, message-free framework/API/provider error events, `/api/health`, audit records | encryption/rotation integration tests, secret scan, observability unit tests, endpoint inspection |
 | Operator observability | Owner/Admin Settings evidence from integration usage, current-month provider outcomes, and append-oriented audit records | UTC-window unit tests + desktop/mobile four-role browser matrix |
 | Production release verification | `scripts/verify-deployment.ts`, canonical-origin and response-contract checks, `docs/RELEASE_CHECKLIST.md` | unit contract tests; production-build smoke verification; public deployment remains blocked |
 | Documentation | `docs/API.md`, `docs/OPERATIONS.md`, `.env.example`, `README.md` | manual inspection |

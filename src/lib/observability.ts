@@ -1,3 +1,5 @@
+import { ProviderError } from "@/lib/provider-errors";
+
 type FrameworkRequest = {
   method: string;
 };
@@ -16,6 +18,14 @@ const safeValue = /^[A-Za-z0-9 /_.:@()[\]-]{1,160}$/;
 export function errorType(error: unknown): string {
   if (error instanceof Error && safeValue.test(error.name)) return error.name;
   return "UnknownError";
+}
+
+export function providerFailureFields(error: unknown, correlationId: string) {
+  return {
+    correlationId,
+    errorType: errorType(error),
+    ...(error instanceof ProviderError ? { providerCode: error.code } : {}),
+  };
 }
 
 export function frameworkErrorFields(error: unknown, request: FrameworkRequest, context: FrameworkContext) {

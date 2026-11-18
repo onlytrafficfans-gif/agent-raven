@@ -3,6 +3,7 @@ import { ApolloClient } from "@/lib/apollo";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
+import { providerFailureFields } from "@/lib/observability";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { integrationCredentialSchema } from "@/lib/schemas";
 import { currentEncryptionKeyId, encryptCredential } from "@/lib/security";
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
     logEvent("info", "apollo.connected", { organizationId: ctx.organizationId, correlationId: requestId });
     return correlatedJson({ provider: "APOLLO", state: "CONNECTED", lastTestedAt: testedAt.toISOString() }, requestId);
   } catch (error) {
-    logEvent("warn", "apollo.connection_failed", { correlationId: requestId, error: error instanceof Error ? error.message : "unknown" });
+    logEvent("warn", "apollo.connection_failed", providerFailureFields(error, requestId));
     return jsonError(error, requestId);
   }
 }

@@ -4,6 +4,7 @@ import { runBudgetedApolloOperation } from "@/lib/budget";
 import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
+import { providerFailureFields } from "@/lib/observability";
 import { ProviderError } from "@/lib/provider-errors";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { companySearchSchema } from "@/lib/schemas";
@@ -70,7 +71,7 @@ export async function POST(request: Request) {
     }
   } catch (error) {
     if (!(error instanceof AuthorizationError)) {
-      logEvent("warn", "apollo.search_failed", { correlationId: requestId, error: error instanceof Error ? error.message : "unknown" });
+      logEvent("warn", "apollo.search_failed", providerFailureFields(error, requestId));
     }
     return jsonError(error, requestId);
   }
