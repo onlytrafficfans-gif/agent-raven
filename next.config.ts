@@ -16,7 +16,7 @@ const contentSecurityPolicy = [
 const nextConfig: NextConfig = {
   poweredByHeader: false,
   turbopack: { root: process.cwd() },
-  experimental: { typedEnv: false },
+  experimental: { typedEnv: false, agentUpgrade: "security" },
   async headers() {
     return [
       {
