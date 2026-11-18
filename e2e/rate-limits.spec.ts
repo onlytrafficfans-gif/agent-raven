@@ -32,6 +32,11 @@ test("prospect writes are persistently rate limited with a retry contract", asyn
     organizationId = user.memberships[0]?.organizationId;
     if (!organizationId) throw new Error("Rate-limit test user must belong to an organization.");
 
+    const remainingInWindow = rateLimitPolicies.prospectCreate.windowMs - (Date.now() % rateLimitPolicies.prospectCreate.windowMs);
+    if (remainingInWindow < 15_000) {
+      await page.waitForTimeout(remainingInWindow + 250);
+    }
+
     const responses = [];
     for (let index = 0; index <= rateLimitPolicies.prospectCreate.limit; index++) {
       responses.push(await page.request.post("/api/prospects", {
