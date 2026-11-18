@@ -2,7 +2,7 @@
 
 Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases are navigation-only, disabled, and labelled `Planned`.
 
-Current release priority: **publish the locally verified security release and require a clean CI dependency audit**. Next.js is upgraded from vulnerable 16.4.2 to patched 16.4.6, production dependencies audit clean, and the complete local release gate passes. Public CI verification remains required before this release can be treated as published evidence.
+Current release priority: **complete production infrastructure and approval-gated live acceptance**. Next.js 16.4.6, sanitized provider telemetry, and the mandatory production dependency audit are published and verified by GitHub Actions run 23. Managed PostgreSQL, canonical HTTPS hosting, a verified Resend sender, and authorized Apollo acceptance remain the Phase 1 blockers.
 
 ## Vertical slice
 
