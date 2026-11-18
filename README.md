@@ -22,7 +22,7 @@ Run `npm run credentials:rotate` before a credential-encryption key change to ve
 
 Use `/api/health/live` for process liveness and `/api/health` for database-backed readiness. The readiness response is public but sanitized, reports rounded PostgreSQL latency, and returns HTTP 503 only when the database query fails.
 
-Unexpected server failures produce structured, sanitized error events for the hosting log drain. They include safe route/error classification only and exclude request URLs, query strings, headers, bodies, exception messages, stack traces, reset recipients, and secret-bearing fields.
+Unexpected server and provider failures produce structured, sanitized error events for the hosting log drain. They include safe route/error classification and controlled provider codes only, excluding request URLs, query strings, headers, bodies, exception messages, stack traces, reset recipients, provider responses, and secret-bearing fields.
 
 Owner and Admin users can inspect real organization-scoped Apollo usage, the latest provider outcomes, and sanitized audit actions in Settings. Paid search/detail operations reserve their monthly allowance atomically in PostgreSQL before contacting Apollo, so concurrent requests cannot spend the same remaining capacity. The view uses a UTC calendar-month window and never exposes credentials, audit metadata, or provider response content. Analyst and Viewer roles cannot access this operational evidence.
 
