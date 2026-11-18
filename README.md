@@ -31,6 +31,7 @@ The suite defaults to port 3000. If that port is already occupied, run it with a
 ## Verification
 
 ```bash
+npm run security:audit
 npm run typecheck
 npm run lint
 npm test

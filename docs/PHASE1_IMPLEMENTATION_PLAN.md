@@ -2,7 +2,7 @@
 
 Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases are navigation-only, disabled, and labelled `Planned`.
 
-Current release priority: **upgrade Next.js 16.4.2 to a patched release and rerun the full release gate**. The installed version is affected by GHSA-mfr8-8qww-v76h, and Next.js now stops the first production build with a security upgrade requirement. Provider telemetry hardening is implemented and locally verified but remains unpublished until that release blocker is resolved.
+Current release priority: **publish the locally verified security release and require a clean CI dependency audit**. Next.js is upgraded from vulnerable 16.4.2 to patched 16.4.6, production dependencies audit clean, and the complete local release gate passes. Public CI verification remains required before this release can be treated as published evidence.
 
 ## Vertical slice
 
