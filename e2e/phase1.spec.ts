@@ -22,6 +22,22 @@ test("real database-backed navigation shows the disconnected workspace", async (
   await expect(page.getByRole("heading", { name: "Prospects" })).toBeVisible();
 });
 
+test("oversized app-owned payloads are rejected without echoing submitted content", async ({ page }) => {
+  const marker = "secret-body-marker";
+  const response = await page.request.post("/api/prospects", {
+    headers: { "content-type": "application/json", "x-request-id": "e2e-body-limit" },
+    data: JSON.stringify({ marker, filler: "x".repeat(70 * 1024) }),
+  });
+  expect(response.status()).toBe(413);
+  expect(response.headers()["x-request-id"]).toBe("e2e-body-limit");
+  const text = await response.text();
+  expect(text).not.toContain(marker);
+  expect(JSON.parse(text)).toEqual({
+    error: { code: "PAYLOAD_TOO_LARGE", message: "The request payload is too large." },
+    correlationId: "e2e-body-limit",
+  });
+});
+
 test("CSV import persists a prospect and status update to PostgreSQL", async ({ page }, testInfo) => {
   const suffix = `${testInfo.project.name}-${Date.now()}`;
   const name = `E2E Roofing ${suffix}`;

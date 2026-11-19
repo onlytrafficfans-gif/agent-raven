@@ -3,6 +3,7 @@ import { AuthorizationError } from "@/lib/authorization";
 import { RateLimitError } from "@/lib/rate-limit";
 import { logEvent } from "@/lib/logger";
 import { errorType } from "@/lib/observability";
+import { RequestBodyError } from "@/lib/request-body";
 import { ZodError } from "zod";
 
 export function correlatedJson(body: Record<string, unknown>, correlationId: string, init: ResponseInit = {}): Response {
@@ -26,6 +27,9 @@ export function jsonError(error: unknown, correlationId?: string): Response {
     );
   }
   if (error instanceof ZodError) return correlatedJson({ error: { code: "VALIDATION_ERROR", message: "Check the submitted fields.", fields: error.flatten().fieldErrors } }, requestId, { status: 400 });
+  if (error instanceof RequestBodyError) {
+    return correlatedJson({ error: { code: error.code, message: error.message } }, requestId, { status: error.status });
+  }
   if (error instanceof RateLimitError) {
     return correlatedJson(
       { error: { code: error.code, message: error.message, retryAfter: error.retryAfter } },

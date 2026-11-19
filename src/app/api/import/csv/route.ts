@@ -5,13 +5,14 @@ import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { parseBoundedFormData } from "@/lib/request-body";
 
 export async function POST(request: Request) {
   const requestId = correlationId(request);
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
     await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "csvImport" });
-    const form = await request.formData();
+    const form = await parseBoundedFormData(request);
     const file = form.get("file");
     if (!(file instanceof File) || file.size > 2_000_000) {
       return correlatedJson({ error: { code: "INVALID_FILE", message: "Upload a CSV file no larger than 2 MB." } }, requestId, { status: 400 });

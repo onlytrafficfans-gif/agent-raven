@@ -2,6 +2,7 @@ import { Prisma } from "@prisma/client";
 import { requireContext } from "@/lib/authorization";
 import { db } from "@/lib/db";
 import { normalizeDomain } from "@/lib/domain";
+import { parseBoundedJson } from "@/lib/request-body";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { enforceRateLimit } from "@/lib/rate-limit";
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
     await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "prospectCreate" });
-    const input = saveProspectSchema.parse(await request.json());
+    const input = saveProspectSchema.parse(await parseBoundedJson(request));
     const normalizedDomain = normalizeDomain(input.domain ?? input.websiteUrl);
     const source = input.providerName === "Apollo" ? "APOLLO" : "CSV_IMPORT";
     const providerId = input.providerOrganizationId ?? null;

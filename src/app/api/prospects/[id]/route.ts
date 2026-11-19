@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId } from "@/lib/logger";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { parseBoundedJson } from "@/lib/request-body";
 import { prospectUpdateSchema } from "@/lib/schemas";
 
 export async function PATCH(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -12,7 +13,7 @@ export async function PATCH(request: Request, { params }: { params: Promise<{ id
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
     await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "prospectUpdate" });
     const { id } = await params;
-    const input = prospectUpdateSchema.parse(await request.json());
+    const input = prospectUpdateSchema.parse(await parseBoundedJson(request));
     const existing = await db.prospectCompany.findFirst({ where: { id, organizationId: ctx.organizationId } });
     if (!existing) return correlatedJson({ error: { code: "NOT_FOUND", message: "Prospect not found." } }, requestId, { status: 404 });
 
