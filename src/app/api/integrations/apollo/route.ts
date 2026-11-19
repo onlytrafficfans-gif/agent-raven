@@ -5,6 +5,7 @@ import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
 import { providerFailureFields } from "@/lib/observability";
 import { enforceRateLimit } from "@/lib/rate-limit";
+import { parseBoundedJson } from "@/lib/request-body";
 import { integrationCredentialSchema } from "@/lib/schemas";
 import { currentEncryptionKeyId, encryptCredential } from "@/lib/security";
 
@@ -13,7 +14,7 @@ export async function POST(request: Request) {
   try {
     const ctx = await requireContext(["OWNER", "ADMIN"]);
     await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "apolloConnection" });
-    const { apiKey } = integrationCredentialSchema.parse(await request.json());
+    const { apiKey } = integrationCredentialSchema.parse(await parseBoundedJson(request));
     await new ApolloClient(apiKey).testConnection();
     const encryptedCredential = encryptCredential(apiKey);
     const credentialKeyId = currentEncryptionKeyId();

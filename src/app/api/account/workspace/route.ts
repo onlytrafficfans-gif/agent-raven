@@ -1,8 +1,9 @@
 import { z } from "zod";
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { correlatedJson } from "@/lib/http";
+import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
+import { parseBoundedJson } from "@/lib/request-body";
 
 const bodySchema = z.object({ workspaceName: z.string().trim().min(2).max(80).optional() }).strict();
 
@@ -11,7 +12,12 @@ export async function POST(request: Request) {
   const session = await auth.api.getSession({ headers: request.headers });
   if (!session) return correlatedJson({ error: { code: "UNAUTHORIZED", message: "Sign in is required." } }, requestId, { status: 401 });
 
-  const raw = await request.json().catch(() => ({}));
+  let raw: unknown;
+  try {
+    raw = await parseBoundedJson(request);
+  } catch (error) {
+    return jsonError(error, requestId);
+  }
   const parsed = bodySchema.safeParse(raw);
   if (!parsed.success) return correlatedJson({ error: { code: "VALIDATION_ERROR", message: "Workspace name must be between 2 and 80 characters." } }, requestId, { status: 400 });
 

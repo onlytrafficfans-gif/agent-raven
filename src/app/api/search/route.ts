@@ -6,6 +6,7 @@ import { correlatedJson, jsonError } from "@/lib/http";
 import { correlationId, logEvent } from "@/lib/logger";
 import { providerFailureFields } from "@/lib/observability";
 import { ProviderError } from "@/lib/provider-errors";
+import { parseBoundedJson } from "@/lib/request-body";
 import { enforceRateLimit } from "@/lib/rate-limit";
 import { companySearchSchema } from "@/lib/schemas";
 import { decryptCredential } from "@/lib/security";
@@ -15,7 +16,7 @@ export async function POST(request: Request) {
   try {
     const ctx = await requireContext(["OWNER", "ADMIN", "ANALYST"]);
     await enforceRateLimit({ organizationId: ctx.organizationId, userId: ctx.userId, policy: "apolloOperation" });
-    const input = companySearchSchema.parse(await request.json());
+    const input = companySearchSchema.parse(await parseBoundedJson(request));
     const connection = await db.integrationConnection.findUnique({
       where: { organizationId_provider: { organizationId: ctx.organizationId, provider: "APOLLO" } },
     });
