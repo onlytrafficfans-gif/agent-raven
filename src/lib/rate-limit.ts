@@ -1,3 +1,4 @@
+import { createHmac } from "node:crypto";
 import { db } from "@/lib/db";
 
 const dayMs = 24 * 60 * 60 * 1000;
@@ -14,6 +15,12 @@ export const rateLimitPolicies = {
 } as const;
 
 export type RateLimitPolicyName = keyof typeof rateLimitPolicies;
+
+export const publicRateLimitPolicies = {
+  passwordReset: { limit: 3, windowMs: 60 * 60_000 },
+} as const;
+
+export type PublicRateLimitPolicyName = keyof typeof publicRateLimitPolicies;
 
 export class RateLimitError extends Error {
   readonly code = "RATE_LIMITED";
@@ -52,6 +59,36 @@ export async function enforceRateLimit(input: {
 
   if (bucket.count === 1) {
     await db.apiRateLimitBucket.deleteMany({ where: { windowStart: { lt: new Date(now.getTime() - dayMs) } } });
+  }
+
+  const retryAfter = Math.max(1, Math.ceil((windowStart.getTime() + policy.windowMs - now.getTime()) / 1000));
+  if (bucket.count > policy.limit) throw new RateLimitError(retryAfter);
+  return { limit: policy.limit, remaining: Math.max(0, policy.limit - bucket.count), retryAfter };
+}
+
+export function publicRateLimitBucketKey(policy: PublicRateLimitPolicyName, subject: string, secret = process.env.BETTER_AUTH_SECRET): string {
+  if (!secret || secret.length < 32) throw new Error("Public rate limiting requires the configured authentication secret.");
+  const digest = createHmac("sha256", secret).update(subject.trim().toLowerCase()).digest("hex");
+  return `${policy}:${digest}`;
+}
+
+export async function enforcePublicRateLimit(input: {
+  subject: string;
+  policy: PublicRateLimitPolicyName;
+  now?: Date;
+}): Promise<{ limit: number; remaining: number; retryAfter: number }> {
+  const policy = publicRateLimitPolicies[input.policy];
+  const now = input.now ?? new Date();
+  const windowStart = fixedWindowStart(now, policy.windowMs);
+  const bucketKey = publicRateLimitBucketKey(input.policy, input.subject);
+  const bucket = await db.publicRateLimitBucket.upsert({
+    where: { bucketKey_windowStart: { bucketKey, windowStart } },
+    create: { bucketKey, windowStart, count: 1 },
+    update: { count: { increment: 1 } },
+  });
+
+  if (bucket.count === 1) {
+    await db.publicRateLimitBucket.deleteMany({ where: { windowStart: { lt: new Date(now.getTime() - dayMs) } } });
   }
 
   const retryAfter = Math.max(1, Math.ceil((windowStart.getTime() + policy.windowMs - now.getTime()) / 1000));

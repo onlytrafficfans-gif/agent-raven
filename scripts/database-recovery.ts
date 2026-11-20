@@ -195,6 +195,7 @@ function databaseCounts(url: URL): Counts {
     "IntegrationUsage",
     "AuditLog",
     "ApiRateLimitBucket",
+    "PublicRateLimitBucket",
     "_prisma_migrations",
   ];
   const pairs = tables.map((table) => `'${table}', (SELECT COUNT(*)::int FROM "${table}")`).join(", ");

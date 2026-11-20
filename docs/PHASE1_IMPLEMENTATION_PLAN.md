@@ -2,7 +2,7 @@
 
 Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases are navigation-only, disabled, and labelled `Planned`.
 
-Current release priority: **complete production infrastructure and approval-gated live acceptance**. Next.js 16.4.6, sanitized provider telemetry, and the mandatory production dependency audit are published and verified by GitHub Actions run 23. Managed PostgreSQL, canonical HTTPS hosting, a verified Resend sender, and authorized Apollo acceptance remain the Phase 1 blockers.
+Current release priority: **complete production infrastructure and approval-gated live acceptance**. Next.js 16.4.6, sanitized provider telemetry, bounded mutation payloads, and the mandatory production dependency audit are published and verified by GitHub Actions run 27. Managed PostgreSQL, canonical HTTPS hosting, a verified Resend sender, and authorized Apollo acceptance remain the Phase 1 blockers.
 
 ## Vertical slice
 
@@ -19,6 +19,7 @@ Current release priority: **complete production infrastructure and approval-gate
 | Requirement | Implementation | Verification |
 |---|---|---|
 | Authentication / server RBAC | `src/lib/auth.ts`, `src/lib/authorization.ts`, protected dashboard layout and route handlers | unit + route negative tests; Playwright redirect |
+| Public recovery abuse protection | keyed-HMAC `PublicRateLimitBucket`, `/api/account/password-reset` | PostgreSQL enforcement test; live sender remains approval/configuration blocked |
 | Tenant-scoped database | `prisma/schema.prisma`, initial SQL migration | migration deploy and integration suite against PostgreSQL |
 | Apollo connection | `src/lib/apollo.ts`, encrypted `IntegrationConnection`, `/api/integrations/apollo` | adapter contract tests; redacted live test when authorized |
 | Search / history / budget | `/api/search`, search UI, `SearchQuery`, `SearchRun`, `IntegrationUsage`, transaction-scoped monthly advisory lock | validation, budget/error mapping tests, 12-request database concurrency test; disconnected real-runtime browser state |

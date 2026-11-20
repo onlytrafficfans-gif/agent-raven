@@ -148,6 +148,15 @@ model ApiRateLimitBucket {
   @@index([windowStart])
 }
 
+model PublicRateLimitBucket {
+  bucketKey   String   @db.VarChar(160)
+  windowStart DateTime @db.Timestamptz(3)
+  count       Int      @default(1)
+
+  @@id([bucketKey, windowStart])
+  @@index([windowStart])
+}
+
 model Membership {
   id             String         @id @default(uuid()) @db.Uuid
   organizationId String         @db.Uuid
