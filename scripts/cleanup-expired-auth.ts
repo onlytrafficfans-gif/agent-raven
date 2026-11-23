@@ -15,7 +15,7 @@ const cutoff = new Date();
 
 try {
   const before = await inspectExpiredAuthData(cutoff);
-  const deleted = execute ? await cleanupExpiredAuthData(cutoff) : { expiredSessions: 0, expiredVerifications: 0 };
+  const deleted = execute ? await cleanupExpiredAuthData(cutoff) : { expiredSessions: 0, expiredVerifications: 0, expiredRateLimits: 0 };
   const after = execute ? await inspectExpiredAuthData(cutoff) : before;
   process.stdout.write(`${JSON.stringify({
     status: execute ? "completed" : "dry-run",
