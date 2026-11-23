@@ -2,7 +2,7 @@
 
 Active phase: **Phase 1 — Foundation and Business Discovery**. Later phases are navigation-only, disabled, and labelled `Planned`.
 
-Current release priority: **complete production infrastructure and approval-gated live acceptance**. Next.js 16.4.6, sanitized provider telemetry, bounded mutation payloads, persistent privacy-safe password-reset throttling, and the mandatory production dependency audit are published and verified by GitHub Actions run 31. Database-backed Better Auth throttling for sign-in and sign-up is locally verified and awaits the current branch's complete CI gate. Managed PostgreSQL, canonical HTTPS hosting, a verified Resend sender, and authorized Apollo acceptance remain the Phase 1 blockers.
+Current release priority: **complete production infrastructure and approval-gated live acceptance**. Next.js 16.4.6, sanitized provider telemetry, bounded mutation payloads, persistent privacy-safe password-reset throttling, database-backed Better Auth sign-in/sign-up throttling, and the mandatory production dependency audit are published and verified by GitHub Actions run 35. Managed PostgreSQL, canonical HTTPS hosting, a verified Resend sender, and authorized Apollo acceptance remain the Phase 1 blockers.
 
 ## Vertical slice
 
