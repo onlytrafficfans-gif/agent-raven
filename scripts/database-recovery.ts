@@ -182,6 +182,7 @@ function databaseCounts(url: URL): Counts {
     "Session",
     "Account",
     "Verification",
+    "RateLimit",
     "Organization",
     "Membership",
     "IntegrationConnection",

@@ -13,7 +13,7 @@ Credential rotation is dual-read and single-write: the application encrypts new 
 
 ## Authentication retention
 
-Run `npm run auth:cleanup` to inspect counts without changing data. Run `npm run auth:cleanup:execute` from a trusted maintenance environment to transactionally delete sessions and verification records whose `expiresAt` is at or before the captured cutoff. Output contains only the cutoff and aggregate before/deleted/after counts; it never contains tokens, user identifiers, email addresses, or secret values. Schedule the execute command daily on durable worker or hosting cron infrastructure after production database access is configured. Do not run it inside an ordinary serverless request.
+Run `npm run auth:cleanup` to inspect counts without changing data. Run `npm run auth:cleanup:execute` from a trusted maintenance environment to transactionally delete sessions and verification records whose `expiresAt` is at or before the captured cutoff and Better Auth rate-limit rows older than 24 hours. Output contains only the cutoff and aggregate before/deleted/after counts; it never contains tokens, user identifiers, email addresses, IP addresses, rate-limit keys, or secret values. Schedule the execute command daily on durable worker or hosting cron infrastructure after production database access is configured. Do not run it inside an ordinary serverless request.
 
 The cleanup integration test creates isolated expired and active records, proves exactly the expired session and verification are deleted, and proves the active pair remains. On November 5, 2026 at 5:57 AM Pacific, the local dry run found 60 expired sessions and zero expired verification rows; the measured execute run removed those 60 sessions and preserved the active session.
 
@@ -31,7 +31,7 @@ Use managed PostgreSQL point-in-time recovery with daily backups. Quarterly, res
 
 Run `npm run db:backup` for a private custom-format dump and SHA-256 checksum. Run `npm run db:restore-drill` to create a new backup, restore it into a randomly named isolated database, compare all authentication, organization, integration, search, prospect, audit, and Prisma migration table counts, run `prisma migrate status`, and force-remove the isolated database. Dumps, checksums, and JSON drill reports are mode `0600` under the ignored `.recovery/` directory. Set `PG_BIN` if PostgreSQL client tools are outside the known system or bundled paths. Non-local operations fail closed unless `ALLOW_REMOTE_RECOVERY_OPERATION=true` is deliberately supplied.
 
-Latest measured local drill on November 20, 2026 at 6:02 AM Pacific: **PASS**. PostgreSQL 16 restored 19 critical tables, including `ApiRateLimitBucket`, `PublicRateLimitBucket`, and `ProspectSuppression`, with exact row-count parity; five migrations were current; the isolated database was removed; and the full drill completed in 10.0 seconds. This proves the workflow locally; production RPO/RTO still depend on the selected managed PostgreSQL backup service and a production restore exercise.
+Latest measured local drill on November 23, 2026 at 6:08 AM Pacific: **PASS**. PostgreSQL 16 restored 20 critical tables, including `RateLimit`, `ApiRateLimitBucket`, `PublicRateLimitBucket`, and `ProspectSuppression`, with exact row-count parity; six migrations were current; the isolated database was removed; and the full drill completed in 9.5 seconds. This proves the workflow locally; production RPO/RTO still depend on the selected managed PostgreSQL backup service and a production restore exercise.
 
 Target Phase 1 objectives: 24-hour recovery point and 4-hour recovery time. The local drill is below the RTO target, while the production RPO and RTO remain operating targets until measured against the deployed managed database.
 
@@ -66,6 +66,8 @@ Owner/Admin privacy deletion requires an explicit in-product confirmation. It tr
 All routes receive a same-origin Content Security Policy, clickjacking denial through CSP and `X-Frame-Options`, MIME sniffing protection, a restricted referrer policy, disabled camera/microphone/geolocation/browser-topic permissions, and same-origin opener/resource isolation. The production browser suite verifies these headers. HSTS is intentionally deferred until the final HTTPS hostname and subdomain policy are verified; enable it at the deployment edge only after that decision.
 
 Password-reset initiation uses a PostgreSQL fixed-window limit of three attempts per normalized email per hour. Bucket keys are keyed HMAC digests using `BETTER_AUTH_SECRET`; the database does not retain submitted email addresses in the rate-limit table. The limit is enforced only when password-email delivery is configured, and both existing and nonexistent accounts use the same response contract to avoid account enumeration.
+
+Better Auth sign-in and sign-up throttles use PostgreSQL storage rather than process memory, so protection remains effective across server restarts and multiple application instances. These operational rows contain the normalized client address and authentication path required by Better Auth; the daily authentication cleanup deletes rows older than 24 hours and reports only aggregate counts.
 
 ## Costs and limits
 

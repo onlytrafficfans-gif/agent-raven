@@ -30,7 +30,10 @@ export const auth = betterAuth({
     },
   },
   session: { expiresIn: 60 * 60 * 24 * 30, updateAge: 60 * 60 * 24 },
-  rateLimit: { enabled: process.env.E2E !== "true" },
+  rateLimit: {
+    enabled: process.env.E2E !== "true",
+    storage: "database",
+  },
   advanced: { database: { generateId: "uuid", transaction: true } },
   trustedOrigins: [process.env.BETTER_AUTH_URL ?? "http://localhost:3000"],
 });
