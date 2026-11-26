@@ -2,6 +2,8 @@
 
 Initial audit date: 2026-10-17. Latest local validation: 2026-11-23 (America/Los_Angeles). Environment: local Codex workspace with PostgreSQL 16.15; no authorized Apollo credential or permission to consume credits.
 
+November 25 local follow-up: the app-owned route is the sole public password-reset initiation endpoint. A server-side integration check confirms Better Auth still accepts internal reset requests. The production build, local deployment smoke check, 75 automated tests, and all 30 desktop/mobile browser checks passed. The launch gate still requires canonical HTTPS hosting, managed PostgreSQL, a verified Resend sender, and authorized live Apollo acceptance.
+
 | Criterion | Status | Evidence / blocker |
 |---|---|---|
 | Protected authentication and organization RBAC | PASS | Better Auth owner login, server membership lookup, protected dashboard layout, and a real four-user browser matrix. Owner/Admin can disconnect Apollo, export, and delete/suppress prospects; Analyst/Viewer cannot. Owner/Admin/Analyst can search, view detail, create, and update prospects; Viewer controls are read-only. Disconnected provider states prove routing without live or paid calls. |

@@ -10,6 +10,8 @@ import { errorType } from "@/lib/observability";
 
 export const auth = betterAuth({
   appName: "Agent.Raven",
+  // Reset requests must pass the app's per-email throttle before reaching auth.api.
+  disabledPaths: ["/request-password-reset"],
   database: prismaAdapter(db, { provider: "postgresql" }),
   emailAndPassword: {
     enabled: true,
