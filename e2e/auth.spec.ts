@@ -43,6 +43,11 @@ test("signup provisions a real workspace, password reset works, and remember me 
     expect(createdUser?.memberships[0]?.organization.integrations[0]?.state).toBe("DISCONNECTED");
     organizationIds = createdUser?.memberships.map(({ organizationId }) => organizationId) ?? [];
 
+    const directReset = await request.post("/api/auth/request-password-reset", {
+      data: { email, redirectTo: "/reset-password" },
+    });
+    expect(directReset.status()).toBe(404);
+
     const token = randomUUID().replaceAll("-", "");
     await db.verification.create({
       data: { identifier: `reset-password:${token}`, value: createdUser!.id, expiresAt: new Date(Date.now() + 60 * 60 * 1000) },
