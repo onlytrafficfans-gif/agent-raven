@@ -36,6 +36,20 @@ describe("production deployment environment", () => {
     expect(JSON.stringify(result)).not.toContain("undefined");
   });
 
+  it.each(["localhost", "LOCALHOST.", "db.localhost", "127.0.0.1", "127.1", "[::1]", "[::ffff:127.0.0.2]"])(
+    "rejects a loopback database host (%s) without exposing credentials",
+    (host) => {
+      const result = checkProductionEnvironment({
+        ...validEnvironment,
+        DATABASE_URL: `postgresql://raven:private-password@${host}:5432/agent_raven`,
+      });
+      expect(result.valid).toBe(false);
+      expect(result.configured.database).toBe(false);
+      expect(result.errors).toEqual([expect.stringContaining("loopback")]);
+      expect(JSON.stringify(result)).not.toContain("private-password");
+    },
+  );
+
   it("rejects insecure origins, placeholders, malformed encryption, and disabled budgets", () => {
     const result = checkProductionEnvironment({
       ...validEnvironment,

@@ -7,7 +7,7 @@ Use this checklist for every production release. Keep the command output and dep
 - Confirm the intended commit passed the complete `Production verification` workflow on `main`.
 - Confirm the release owner, deployment target, canonical HTTPS origin, and rollback target.
 - Run `npm ci --legacy-peer-deps`, `npm run security:audit`, `npm run typecheck`, `npm run lint`, `npm test`, and `npm run build` from the intended commit.
-- Run `npm run deploy:check` with production variables. It must pass without copying secret values into the release record.
+- Run `npm run deploy:check` with production variables. Set `DATABASE_URL` to the managed PostgreSQL host reachable from the deployment. The check rejects loopback hosts and reports configuration errors without printing secrets.
 - Confirm managed PostgreSQL backups and point-in-time recovery are enabled. Record the latest successful restore drill and verify the migration is backward compatible with the rollback target.
 - Confirm `/api/health/live` is the process liveness probe and `/api/health` is the traffic readiness probe.
 - Confirm the daily `npm run auth:cleanup:execute` job is scheduled in durable infrastructure.
