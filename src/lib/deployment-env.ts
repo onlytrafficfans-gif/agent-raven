@@ -1,3 +1,5 @@
+import { isIPv4 } from "node:net";
+
 type DeploymentEnvironment = Record<string, string | undefined>;
 
 export type DeploymentEnvironmentCheck = {
@@ -42,6 +44,13 @@ function validPostgresUrl(value: string | undefined, errors: string[]): boolean 
     }
     if (!url.hostname || !url.pathname.slice(1)) {
       errors.push("DATABASE_URL must include a host and database name.");
+      return false;
+    }
+    // Use the special-URL parser to canonicalize numeric host spellings.
+    const host = new URL(`http://${url.hostname}`).hostname.replace(/\.$/, "");
+    if (host === "localhost" || host.endsWith(".localhost") || (isIPv4(host) && host.startsWith("127.")) ||
+        host === "[::1]" || /^\[::ffff:7f[0-9a-f]{2}:/.test(host)) {
+      errors.push("DATABASE_URL must point to the production PostgreSQL host, not a loopback address.");
       return false;
     }
     if (placeholderPattern.test(value)) {
